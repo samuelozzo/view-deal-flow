@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -156,9 +157,11 @@ const Dashboard = () => {
                     {app.status === "accepted" && (
                       <>
                         {app.hasChat && (
-                          <Button variant="outline" size="sm">
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Open Chat
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/chat/${app.id}`}>
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Open Chat
+                            </Link>
                           </Button>
                         )}
                         <Button variant="hero" size="sm">
@@ -173,7 +176,11 @@ const Dashboard = () => {
                       </Button>
                     )}
                     {app.status === "submitted" && (
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setActiveTab("submissions")}
+                      >
                         View Submission
                       </Button>
                     )}
