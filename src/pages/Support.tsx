@@ -1,0 +1,151 @@
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Navbar from "@/components/Navbar";
+import { Mail, MessageCircle, HelpCircle, FileText } from "lucide-react";
+
+const Support = () => {
+  const whatsappNumber = "+31612345678"; // Replace with actual WhatsApp business number
+  const supportEmail = "support@viewdeal.eu";
+
+  const faqs = [
+    {
+      question: "How does the escrow payment system work?",
+      answer: "When a brand accepts your application, they fund the escrow. The payment is held securely until you submit proof of views and it's verified after 14 days."
+    },
+    {
+      question: "What proof do I need to submit?",
+      answer: "You need to submit a screenshot of your view count and the URL of your content. The view count must be checked 14 days after posting."
+    },
+    {
+      question: "Which platforms are supported?",
+      answer: "Currently, ViewDeal supports TikTok, Instagram, and YouTube for view verification."
+    },
+    {
+      question: "What if I don't reach the required views?",
+      answer: "If the view count doesn't meet the requirement after 14 days, the brand can choose to release partial payment or return the escrow amount."
+    },
+    {
+      question: "Is ViewDeal available outside the EU?",
+      answer: "Currently, ViewDeal operates exclusively within the European Union to ensure compliance with EU regulations."
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">How Can We Help?</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Get in touch with our support team or browse our FAQ
+          </p>
+        </div>
+
+        {/* Contact Methods */}
+        <div className="grid md:grid-cols-2 gap-6 mb-16 max-w-4xl mx-auto">
+          <Card className="p-8 hover:shadow-xl transition-all">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-success/10 flex items-center justify-center">
+                <MessageCircle className="h-8 w-8 text-success" />
+              </div>
+              <h3 className="text-xl font-bold">WhatsApp Support</h3>
+              <p className="text-muted-foreground">
+                Chat with us directly on WhatsApp for quick responses
+              </p>
+              <Button
+                variant="success"
+                className="w-full"
+                asChild
+              >
+                <a
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Chat on WhatsApp
+                </a>
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-8 hover:shadow-xl transition-all">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold">Email Support</h3>
+              <p className="text-muted-foreground">
+                Send us an email and we'll get back to you within 24 hours
+              </p>
+              <Button
+                variant="hero"
+                className="w-full"
+                asChild
+              >
+                <a href={`mailto:${supportEmail}`}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email Us
+                </a>
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-3 mb-8">
+            <HelpCircle className="h-8 w-8 text-primary" />
+            <h2 className="text-3xl font-bold">Frequently Asked Questions</h2>
+          </div>
+          
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <Card key={index} className="p-6 hover:shadow-lg transition-all">
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <FileText className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold mb-2">{faq.question}</h3>
+                    <p className="text-muted-foreground text-sm">{faq.answer}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Additional Help */}
+        <div className="mt-16 text-center">
+          <Card className="p-8 max-w-2xl mx-auto bg-gradient-to-r from-primary/5 to-accent/5">
+            <h3 className="text-xl font-bold mb-2">Still Need Help?</h3>
+            <p className="text-muted-foreground mb-6">
+              Our support team is available Monday to Friday, 9 AM - 6 PM CET
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button variant="outline" asChild>
+                <a
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Chat on WhatsApp
+                </a>
+              </Button>
+              <Button variant="hero" asChild>
+                <a href={`mailto:${supportEmail}`}>Send Email</a>
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Support;
