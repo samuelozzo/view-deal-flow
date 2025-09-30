@@ -4,6 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { Euro, Eye, Clock, TrendingUp, MessageSquare, Upload } from "lucide-react";
 
@@ -12,6 +16,14 @@ const USER_ROLE = "creator"; // or "business"
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("applications");
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+
+  const handleProofSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitDialogOpen(false);
+    toast.success("Proof submitted successfully! Awaiting verification.");
+    setActiveTab("submissions");
+  };
 
   // Mock data for creator
   const applications = [
@@ -164,10 +176,49 @@ const Dashboard = () => {
                             </Link>
                           </Button>
                         )}
-                        <Button variant="hero" size="sm">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Submit Proof
-                        </Button>
+                        <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="hero" size="sm">
+                              <Upload className="h-4 w-4 mr-2" />
+                              Submit Proof
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Submit Proof of Performance</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleProofSubmit} className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="proof-url">Content URL</Label>
+                                <Input 
+                                  id="proof-url" 
+                                  type="url" 
+                                  placeholder="https://instagram.com/p/..."
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="proof-screenshot">Screenshot Upload</Label>
+                                <Input 
+                                  id="proof-screenshot" 
+                                  type="file" 
+                                  accept="image/*"
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="view-count">View Count</Label>
+                                <Input 
+                                  id="view-count" 
+                                  type="number" 
+                                  placeholder="85000"
+                                  required
+                                />
+                              </div>
+                              <Button type="submit" className="w-full">Submit Proof</Button>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
                       </>
                     )}
                     {app.status === "pending" && (

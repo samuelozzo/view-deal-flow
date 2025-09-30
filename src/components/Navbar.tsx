@@ -46,8 +46,8 @@ const Navbar = () => {
             >
               Support
             </Link>
-            <Button variant="ghost" size="sm">
-              Sign In
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/auth">Sign In</Link>
             </Button>
             <Button variant="hero" size="sm" asChild>
               <Link to="/onboarding">Get Started</Link>
@@ -88,8 +88,8 @@ const Navbar = () => {
               Support
             </Link>
             <div className="pt-4 space-y-2">
-              <Button variant="ghost" className="w-full">
-                Sign In
+              <Button variant="ghost" className="w-full" asChild>
+                <Link to="/auth">Sign In</Link>
               </Button>
               <Button variant="hero" className="w-full" asChild>
                 <Link to="/onboarding">Get Started</Link>
