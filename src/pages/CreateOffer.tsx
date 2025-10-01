@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,18 @@ import { ArrowLeft } from "lucide-react";
 const CreateOffer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const accountType = localStorage.getItem("userAccountType");
+    if (accountType !== "business") {
+      toast({
+        title: "Access Denied",
+        description: "Only business accounts can create offers.",
+        variant: "destructive"
+      });
+      navigate("/offers");
+    }
+  }, [navigate, toast]);
   
   const [rewardType, setRewardType] = useState<"cash" | "discount" | "free">("cash");
   const [formData, setFormData] = useState({
