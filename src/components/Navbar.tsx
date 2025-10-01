@@ -39,6 +39,14 @@ const Navbar = () => {
               Dashboard
             </Link>
             <Link
+              to="/create-offer"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActive("/create-offer") ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              Post Offer
+            </Link>
+            <Link
               to="/support"
               className={`text-sm font-medium transition-colors hover:text-primary ${
                 isActive("/support") ? "text-primary" : "text-muted-foreground"
@@ -79,6 +87,13 @@ const Navbar = () => {
               onClick={() => setMobileMenuOpen(false)}
             >
               Dashboard
+            </Link>
+            <Link
+              to="/create-offer"
+              className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Post Offer
             </Link>
             <Link
               to="/support"
