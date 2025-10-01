@@ -1,15 +1,29 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const accountType = localStorage.getItem("userAccountType");
   const isBusiness = accountType === "business";
+  const { language, setLanguage, t } = useLanguage();
   
   const isActive = (path: string) => location.pathname === path;
+
+  const languageLabels = {
+    en: "English",
+    it: "Italiano",
+    es: "Español",
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -30,7 +44,7 @@ const Navbar = () => {
                 isActive("/offers") ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              Browse Offers
+              {t("browseOffers")}
             </Link>
             <Link
               to="/dashboard"
@@ -38,7 +52,7 @@ const Navbar = () => {
                 isActive("/dashboard") ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              Dashboard
+              {t("dashboard")}
             </Link>
             {isBusiness && (
               <Link
@@ -47,7 +61,7 @@ const Navbar = () => {
                   isActive("/create-offer") ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                Post Offer
+                {t("postOffer")}
               </Link>
             )}
             <Link
@@ -56,13 +70,34 @@ const Navbar = () => {
                 isActive("/support") ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              Support
+              {t("support")}
             </Link>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <Globe className="h-4 w-4" />
+                  {languageLabels[language]}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background z-50">
+                <DropdownMenuItem onClick={() => setLanguage("en")}>
+                  English
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage("it")}>
+                  Italiano
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage("es")}>
+                  Español
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/auth">Sign In</Link>
+              <Link to="/auth">{t("signIn")}</Link>
             </Button>
             <Button variant="hero" size="sm" asChild>
-              <Link to="/onboarding">Get Started</Link>
+              <Link to="/onboarding">{t("getStarted")}</Link>
             </Button>
           </div>
 
@@ -83,14 +118,14 @@ const Navbar = () => {
               className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Browse Offers
+              {t("browseOffers")}
             </Link>
             <Link
               to="/dashboard"
               className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Dashboard
+              {t("dashboard")}
             </Link>
             {isBusiness && (
               <Link
@@ -98,7 +133,7 @@ const Navbar = () => {
                 className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Post Offer
+                {t("postOffer")}
               </Link>
             )}
             <Link
@@ -106,14 +141,45 @@ const Navbar = () => {
               className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Support
+              {t("support")}
             </Link>
-            <div className="pt-4 space-y-2">
+            
+            <div className="pt-4 border-t border-border">
+              <div className="space-y-2 mb-4">
+                <p className="text-sm font-medium px-2">Language</p>
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`block w-full text-left px-2 py-2 text-sm rounded ${
+                    language === "en" ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => setLanguage("it")}
+                  className={`block w-full text-left px-2 py-2 text-sm rounded ${
+                    language === "it" ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  Italiano
+                </button>
+                <button
+                  onClick={() => setLanguage("es")}
+                  className={`block w-full text-left px-2 py-2 text-sm rounded ${
+                    language === "es" ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  Español
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-4 space-y-2 border-t border-border">
               <Button variant="ghost" className="w-full" asChild>
-                <Link to="/auth">Sign In</Link>
+                <Link to="/auth">{t("signIn")}</Link>
               </Button>
               <Button variant="hero" className="w-full" asChild>
-                <Link to="/onboarding">Get Started</Link>
+                <Link to="/onboarding">{t("getStarted")}</Link>
               </Button>
             </div>
           </div>
