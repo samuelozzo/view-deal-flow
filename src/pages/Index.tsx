@@ -4,37 +4,40 @@ import { Card } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import { TrendingUp, Shield, Zap, Euro, Eye, CheckCircle } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
+  const { t } = useLanguage();
+  
   const features = [
     {
       icon: Euro,
-      title: "Fair Pricing",
-      description: "Set your own rates like €1 per 1,000 views. Transparent and flexible.",
+      title: t("fairPricing"),
+      description: t("fairPricingDesc"),
     },
     {
       icon: Shield,
-      title: "Secure Escrow",
-      description: "Funds held safely until verified proof of views is delivered.",
+      title: t("secureEscrowTitle"),
+      description: t("secureEscrowDesc"),
     },
     {
       icon: Eye,
-      title: "View Verification",
-      description: "14-day verification period ensures authentic engagement.",
+      title: t("viewVerification"),
+      description: t("viewVerificationDesc"),
     },
     {
       icon: Zap,
-      title: "Quick Matching",
-      description: "Find the perfect creators or brands in minutes, not days.",
+      title: t("quickMatching"),
+      description: t("quickMatchingDesc"),
     },
   ];
 
   const steps = [
-    { number: "1", title: "Create Your Profile", desc: "Sign up as a creator or business" },
-    { number: "2", title: "Browse or Post Offers", desc: "Find deals or create campaigns" },
-    { number: "3", title: "Secure Payment", desc: "Funds held in escrow for safety" },
-    { number: "4", title: "Deliver Content", desc: "Creators post and submit proof" },
-    { number: "5", title: "Get Paid", desc: "Payment released after verification" },
+    { number: "1", title: t("step1Title"), desc: t("step1Desc") },
+    { number: "2", title: t("step2Title"), desc: t("step2Desc") },
+    { number: "3", title: t("step3Title"), desc: t("step3Desc") },
+    { number: "4", title: t("step4Title"), desc: t("step4Desc") },
+    { number: "5", title: t("step5Title"), desc: t("step5Desc") },
   ];
 
   return (
@@ -48,31 +51,30 @@ const Index = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                Connect Creators with Brands
+                {t("heroTitle")}
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  {" "}Through Views
+                  {" "}{t("heroTitleHighlight")}
                 </span>
               </h1>
               <p className="text-lg text-muted-foreground">
-                The EU marketplace where brands post offers, creators deliver content, 
-                and payments flow securely through escrow after verified view counts.
+                {t("heroDescription")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button variant="hero" size="lg" asChild>
-                  <Link to="/onboarding">Start Creating Deals</Link>
+                  <Link to="/onboarding">{t("startCreatingDeals")}</Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
-                  <Link to="/offers">Browse Offers</Link>
+                  <Link to="/offers">{t("browseOffers")}</Link>
                 </Button>
               </div>
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-success" />
-                  <span>Secure Escrow</span>
+                  <span>{t("secureEscrow")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-success" />
-                  <span>14-Day Verification</span>
+                  <span>{t("dayVerification")}</span>
                 </div>
               </div>
             </div>
@@ -80,7 +82,7 @@ const Index = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-3xl blur-3xl" />
               <img
                 src={heroImage}
-                alt="Creator and brand collaboration"
+                alt={t("heroTitle")}
                 className="relative rounded-3xl shadow-2xl"
               />
             </div>
@@ -93,10 +95,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why Choose ViewDeal?
+              {t("whyChoose")}
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Built for the creator economy with trust and transparency at its core
+              {t("whyChooseDescription")}
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -116,10 +118,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              How It Works
+              {t("howItWorks")}
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Five simple steps from offer to payment
+              {t("howItWorksDescription")}
             </p>
           </div>
           <div className="grid md:grid-cols-5 gap-6">
@@ -146,13 +148,13 @@ const Index = () => {
         <div className="absolute inset-0 bg-grid-white/10" />
         <div className="container mx-auto px-4 text-center relative">
           <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-            Ready to Get Started?
+            {t("readyToStart")}
           </h2>
           <p className="text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of creators and brands building authentic partnerships through ViewDeal
+            {t("readyToStartDesc")}
           </p>
           <Button variant="secondary" size="lg" asChild>
-            <Link to="/onboarding">Create Your Account</Link>
+            <Link to="/onboarding">{t("createYourAccount")}</Link>
           </Button>
         </div>
       </section>
@@ -167,33 +169,33 @@ const Index = () => {
                 <span className="text-xl font-bold">ViewDeal</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                The trusted marketplace for creator-brand collaborations across the EU.
+                {t("heroDescription")}
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">For Creators</h4>
+              <h4 className="font-semibold mb-4">{t("forCreators")}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/offers" className="hover:text-primary">Browse Offers</Link></li>
-                <li><Link to="/dashboard" className="hover:text-primary">Dashboard</Link></li>
+                <li><Link to="/offers" className="hover:text-primary">{t("browseOffers")}</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary">{t("dashboard")}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">For Brands</h4>
+              <h4 className="font-semibold mb-4">{t("forBrands")}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/onboarding" className="hover:text-primary">Post an Offer</Link></li>
-                <li><Link to="/dashboard" className="hover:text-primary">Manage Campaigns</Link></li>
+                <li><Link to="/onboarding" className="hover:text-primary">{t("postAnOffer")}</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary">{t("manageCampaigns")}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
+              <h4 className="font-semibold mb-4">{t("support")}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/support" className="hover:text-primary">Help Center</Link></li>
-                <li><Link to="/support" className="hover:text-primary">Contact Us</Link></li>
+                <li><Link to="/support" className="hover:text-primary">{t("helpCenter")}</Link></li>
+                <li><Link to="/support" className="hover:text-primary">{t("contactUs")}</Link></li>
               </ul>
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>&copy; 2025 ViewDeal. EU-based marketplace for creators and brands.</p>
+            <p>{t("footerText")}</p>
           </div>
         </div>
       </footer>

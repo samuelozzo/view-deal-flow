@@ -10,11 +10,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { Euro, Eye, Clock, TrendingUp, MessageSquare, Upload } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock user role - in real app this would come from auth
 const USER_ROLE = "creator"; // or "business"
 
 const Dashboard = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("applications");
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
 
@@ -89,7 +91,7 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-6">Creator Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-6">{t("creatorDashboard")}</h1>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="p-6">
               <div className="flex items-center justify-between">
