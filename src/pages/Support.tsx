@@ -2,8 +2,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import { Mail, MessageCircle, HelpCircle, FileText } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Support = () => {
+  const { t } = useLanguage();
   const whatsappNumber = "+31612345678"; // Replace with actual WhatsApp business number
   const supportEmail = "support@viewdeal.eu";
 
@@ -37,9 +39,9 @@ const Support = () => {
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">How Can We Help?</h1>
+          <h1 className="text-4xl font-bold mb-4">{t("supportTitle")}</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Get in touch with our support team or browse our FAQ
+            {t("supportDescription")}
           </p>
         </div>
 
@@ -50,9 +52,9 @@ const Support = () => {
               <div className="w-16 h-16 mx-auto rounded-full bg-success/10 flex items-center justify-center">
                 <MessageCircle className="h-8 w-8 text-success" />
               </div>
-              <h3 className="text-xl font-bold">WhatsApp Support</h3>
+              <h3 className="text-xl font-bold">{t("whatsappSupport")}</h3>
               <p className="text-muted-foreground">
-                Chat with us directly on WhatsApp for quick responses
+                {t("chatWithUs")}
               </p>
               <Button
                 variant="success"
@@ -65,7 +67,7 @@ const Support = () => {
                   rel="noopener noreferrer"
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
-                  Chat on WhatsApp
+                  {t("chatOnWhatsApp")}
                 </a>
               </Button>
             </div>
@@ -76,9 +78,9 @@ const Support = () => {
               <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
                 <Mail className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-bold">Email Support</h3>
+              <h3 className="text-xl font-bold">{t("emailSupport")}</h3>
               <p className="text-muted-foreground">
-                Send us an email and we'll get back to you within 24 hours
+                {t("sendEmail")}
               </p>
               <Button
                 variant="hero"
@@ -87,7 +89,7 @@ const Support = () => {
               >
                 <a href={`mailto:${supportEmail}`}>
                   <Mail className="h-4 w-4 mr-2" />
-                  Email Us
+                  {t("emailUs")}
                 </a>
               </Button>
             </div>
@@ -98,7 +100,7 @@ const Support = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
             <HelpCircle className="h-8 w-8 text-primary" />
-            <h2 className="text-3xl font-bold">Frequently Asked Questions</h2>
+            <h2 className="text-3xl font-bold">{t("frequentlyAsked")}</h2>
           </div>
           
           <div className="space-y-4">
@@ -123,9 +125,9 @@ const Support = () => {
         {/* Additional Help */}
         <div className="mt-16 text-center">
           <Card className="p-8 max-w-2xl mx-auto bg-gradient-to-r from-primary/5 to-accent/5">
-            <h3 className="text-xl font-bold mb-2">Still Need Help?</h3>
+            <h3 className="text-xl font-bold mb-2">{t("stillNeedHelp")}</h3>
             <p className="text-muted-foreground mb-6">
-              Our support team is available Monday to Friday, 9 AM - 6 PM CET
+              {t("supportAvailability")}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button variant="outline" asChild>
@@ -134,11 +136,11 @@ const Support = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Chat on WhatsApp
+                  {t("chatOnWhatsApp")}
                 </a>
               </Button>
               <Button variant="hero" asChild>
-                <a href={`mailto:${supportEmail}`}>Send Email</a>
+                <a href={`mailto:${supportEmail}`}>{t("sendEmailButton")}</a>
               </Button>
             </div>
           </Card>

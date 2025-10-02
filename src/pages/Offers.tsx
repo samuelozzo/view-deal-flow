@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
 import { Search, TrendingUp, Euro, Eye, Clock, Instagram, Youtube } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock data
 const mockOffers = [
@@ -64,6 +65,7 @@ const mockOffers = [
 ];
 
 const Offers = () => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
@@ -73,9 +75,9 @@ const Offers = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Browse Offers</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{t("browseOffers")}</h1>
           <p className="text-muted-foreground">
-            Find the perfect collaboration opportunity
+            {t("findPerfectDealsDesc")}
           </p>
         </div>
 
@@ -85,7 +87,7 @@ const Offers = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search by title, brand, or category..."
+              placeholder={t("searchOffers")}
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -109,7 +111,7 @@ const Offers = () => {
                     </Badge>
                     {offer.escrowFunded && (
                       <Badge variant="success" className="text-xs">
-                        Funded
+                        {t("funded")}
                       </Badge>
                     )}
                   </div>
@@ -123,7 +125,7 @@ const Offers = () => {
                 <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg">
                   <Euro className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Reward</p>
+                    <p className="text-xs text-muted-foreground">{t("reward")}</p>
                     <p className="font-bold text-primary">{offer.reward}</p>
                   </div>
                 </div>
@@ -133,19 +135,19 @@ const Offers = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Eye className="h-4 w-4" />
-                      Required Views
+                      {t("requiredViews")}
                     </span>
                     <span className="font-semibold">{offer.requiredViews}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      Timeframe
+                      {t("timeframe")}
                     </span>
                     <span className="font-semibold">{offer.timeframe}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Platform</span>
+                    <span className="text-muted-foreground">{t("platform")}</span>
                     <Badge variant="outline" className="flex items-center gap-1">
                       {offer.platform === "Instagram" && <Instagram className="h-3 w-3" />}
                       {offer.platform === "YouTube" && <Youtube className="h-3 w-3" />}
@@ -158,12 +160,12 @@ const Offers = () => {
                 <div className="pt-4 border-t border-border">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs text-muted-foreground">
-                      {offer.applications} applications
+                      {offer.applications} {t("applications")}
                     </span>
                     <TrendingUp className="h-4 w-4 text-success" />
                   </div>
                   <Button variant="hero" className="w-full" asChild>
-                    <Link to={`/offers/${offer.id}`}>View Details & Apply</Link>
+                    <Link to={`/offers/${offer.id}`}>{t("viewDetailsApply")}</Link>
                   </Button>
                 </div>
               </div>
@@ -174,9 +176,9 @@ const Offers = () => {
         {/* Empty State */}
         {mockOffers.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No offers found matching your search</p>
+            <p className="text-muted-foreground mb-4">{t("noOffersFound")}</p>
             <Button variant="outline" onClick={() => setSearchQuery("")}>
-              Clear Search
+              {t("clearSearch")}
             </Button>
           </div>
         )}

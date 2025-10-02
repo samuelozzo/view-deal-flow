@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import { Briefcase, Video, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [selectedRole, setSelectedRole] = useState<"creator" | "business" | null>(null);
 
   const handleRoleSelection = (role: "creator" | "business") => {
@@ -24,10 +26,10 @@ const Onboarding = () => {
       <div className="container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Welcome to ViewDeal
+            {t("welcomeBack")}
           </h1>
           <p className="text-lg text-muted-foreground">
-            Choose your path to get started
+            {t("chooseYourPath")}
           </p>
         </div>
 
@@ -44,27 +46,27 @@ const Onboarding = () => {
                 <Video className="h-10 w-10 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold mb-2">I'm a Creator</h2>
+                <h2 className="text-2xl font-bold mb-2">{t("creatorTitle")}</h2>
                 <p className="text-muted-foreground">
-                  Apply to brand offers, create content, and get paid for views
+                  {t("creatorDesc")}
                 </p>
               </div>
               <ul className="text-left space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Browse and apply to paid offers</span>
+                  <span>{t("creatorFeature1")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Chat directly with brands</span>
+                  <span>{t("creatorFeature2")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Submit proof and get paid via escrow</span>
+                  <span>{t("creatorFeature3")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Works with TikTok, Instagram & YouTube</span>
+                  <span>{t("creatorFeature4")}</span>
                 </li>
               </ul>
               <Button
@@ -75,7 +77,7 @@ const Onboarding = () => {
                   handleRoleSelection("creator");
                 }}
               >
-                Continue as Creator
+                {t("continueAsCreator")}
               </Button>
             </div>
           </Card>
@@ -92,27 +94,27 @@ const Onboarding = () => {
                 <Briefcase className="h-10 w-10 text-accent-foreground" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold mb-2">I'm a Business</h2>
+                <h2 className="text-2xl font-bold mb-2">{t("businessTitle")}</h2>
                 <p className="text-muted-foreground">
-                  Post offers, connect with creators, and grow your brand reach
+                  {t("businessDesc")}
                 </p>
               </div>
               <ul className="text-left space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
-                  <span>Create custom offers with your budget</span>
+                  <span>{t("businessFeature1")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
-                  <span>Review and approve applications</span>
+                  <span>{t("businessFeature2")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
-                  <span>Secure escrow payment system</span>
+                  <span>{t("businessFeature3")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
-                  <span>Verify results before payment release</span>
+                  <span>{t("businessFeature4")}</span>
                 </li>
               </ul>
               <Button
@@ -123,7 +125,7 @@ const Onboarding = () => {
                   handleRoleSelection("business");
                 }}
               >
-                Continue as Business
+                {t("continueAsBusiness")}
               </Button>
             </div>
           </Card>
@@ -131,9 +133,9 @@ const Onboarding = () => {
 
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {t("alreadyHaveAccount")}{" "}
             <Button variant="link" className="p-0 h-auto">
-              Sign in here
+              {t("signIn")}
             </Button>
           </p>
         </div>

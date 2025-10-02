@@ -8,22 +8,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const CreateOffer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   useEffect(() => {
     const accountType = localStorage.getItem("userAccountType");
     if (accountType !== "business") {
       toast({
-        title: "Access Denied",
-        description: "Only business accounts can create offers.",
+        title: t("accessDenied"),
+        description: t("onlyBusinessCanPost"),
         variant: "destructive"
       });
       navigate("/offers");
     }
-  }, [navigate, toast]);
+  }, [navigate, toast, t]);
   
   const [rewardType, setRewardType] = useState<"cash" | "discount" | "free">("cash");
   const [formData, setFormData] = useState({
@@ -40,8 +42,8 @@ const CreateOffer = () => {
     e.preventDefault();
     
     toast({
-      title: "Offer Created!",
-      description: "Your offer has been posted successfully.",
+      title: t("offerCreated"),
+      description: t("offerPostedSuccess"),
     });
     
     navigate("/offers");
@@ -56,23 +58,23 @@ const CreateOffer = () => {
           className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Offers
+          {t("backToOffers")}
         </Button>
 
         <Card>
           <CardHeader>
-            <CardTitle>Create New Offer</CardTitle>
+            <CardTitle>{t("createNewOffer")}</CardTitle>
             <CardDescription>
-              Post an offer for creators to apply and promote your business
+              {t("postOfferDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title">Offer Title</Label>
+                <Label htmlFor="title">{t("offerTitle")}</Label>
                 <Input
                   id="title"
-                  placeholder="E.g., Promote our new product line"
+                  placeholder={t("offerTitlePlaceholder")}
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
@@ -80,10 +82,10 @@ const CreateOffer = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t("description")}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe what you want creators to promote..."
+                  placeholder={t("descriptionPlaceholder")}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   required
@@ -92,21 +94,21 @@ const CreateOffer = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="platform">Platform</Label>
+                <Label htmlFor="platform">{t("platformLabel")}</Label>
                 <Select value={formData.platform} onValueChange={(value) => setFormData({ ...formData, platform: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TikTok">TikTok</SelectItem>
-                    <SelectItem value="Instagram">Instagram</SelectItem>
-                    <SelectItem value="YouTube">YouTube</SelectItem>
+                    <SelectItem value="TikTok">{t("tiktok")}</SelectItem>
+                    <SelectItem value="Instagram">{t("instagram")}</SelectItem>
+                    <SelectItem value="YouTube">{t("youtube")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="requiredViews">Required Views</Label>
+                <Label htmlFor="requiredViews">{t("requiredViewsLabel")}</Label>
                 <Input
                   id="requiredViews"
                   type="number"
@@ -118,22 +120,22 @@ const CreateOffer = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Reward Type</Label>
+                <Label>{t("rewardType")}</Label>
                 <Select value={rewardType} onValueChange={(value: "cash" | "discount" | "free") => setRewardType(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">Cash per View</SelectItem>
-                    <SelectItem value="discount">Discount Code</SelectItem>
-                    <SelectItem value="free">Free Gift</SelectItem>
+                    <SelectItem value="cash">{t("cashPerView")}</SelectItem>
+                    <SelectItem value="discount">{t("discount")}</SelectItem>
+                    <SelectItem value="free">{t("freeGift")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {rewardType === "cash" && (
                 <div className="space-y-2">
-                  <Label htmlFor="cashAmount">Amount per 1,000 Views (€)</Label>
+                  <Label htmlFor="cashAmount">{t("cashAmount")}</Label>
                   <Input
                     id="cashAmount"
                     type="number"
@@ -144,17 +146,17 @@ const CreateOffer = () => {
                     required
                   />
                   <p className="text-sm text-muted-foreground">
-                    Creators will be paid based on verified views after 14 days
+                    {t("cashAmountDesc")}
                   </p>
                 </div>
               )}
 
               {rewardType === "discount" && (
                 <div className="space-y-2">
-                  <Label htmlFor="discountDetails">Discount Details</Label>
+                  <Label htmlFor="discountDetails">{t("discountDetails")}</Label>
                   <Textarea
                     id="discountDetails"
-                    placeholder="E.g., 20% off all products, code: CREATOR20"
+                    placeholder={t("discountPlaceholder")}
                     value={formData.discountDetails}
                     onChange={(e) => setFormData({ ...formData, discountDetails: e.target.value })}
                     required
@@ -165,10 +167,10 @@ const CreateOffer = () => {
 
               {rewardType === "free" && (
                 <div className="space-y-2">
-                  <Label htmlFor="freeGiftDetails">Free Gift Details</Label>
+                  <Label htmlFor="freeGiftDetails">{t("freeGiftDetails")}</Label>
                   <Textarea
                     id="freeGiftDetails"
-                    placeholder="Describe the free product or gift..."
+                    placeholder={t("giftPlaceholder")}
                     value={formData.freeGiftDetails}
                     onChange={(e) => setFormData({ ...formData, freeGiftDetails: e.target.value })}
                     required
@@ -179,7 +181,7 @@ const CreateOffer = () => {
 
               <div className="pt-4">
                 <Button type="submit" className="w-full">
-                  Post Offer
+                  {t("publishOffer")}
                 </Button>
               </div>
             </form>

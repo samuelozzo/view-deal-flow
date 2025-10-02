@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import { ArrowLeft, Send } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock data
 const mockChats = [
@@ -54,6 +55,7 @@ const mockChats = [
 const Chat = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [message, setMessage] = useState("");
   
   const chat = mockChats.find((c) => c.id === Number(id));
@@ -63,8 +65,8 @@ const Chat = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Chat Not Found</h1>
-          <Button onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
+          <h1 className="text-2xl font-bold mb-4">{t("chatNotFound")}</h1>
+          <Button onClick={() => navigate("/dashboard")}>{t("backToDashboard")}</Button>
         </div>
       </div>
     );
@@ -87,7 +89,7 @@ const Chat = () => {
           <Button variant="ghost" className="mb-4" asChild>
             <Link to="/dashboard">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+              {t("backToDashboard")}
             </Link>
           </Button>
           
@@ -97,7 +99,7 @@ const Chat = () => {
                 <h1 className="text-xl font-bold">{chat.offerTitle}</h1>
                 <p className="text-sm text-muted-foreground">{chat.business}</p>
               </div>
-              <Badge variant="success">Active</Badge>
+              <Badge variant="success">{t("active")}</Badge>
             </div>
           </Card>
         </div>
@@ -135,7 +137,7 @@ const Chat = () => {
         <Card className="p-4">
           <div className="flex gap-2">
             <Input
-              placeholder="Type your message..."
+              placeholder={t("typeMessage")}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSend()}

@@ -8,9 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<"business" | "creator">("creator");
 
@@ -21,7 +23,7 @@ const Auth = () => {
     // Mock login
     setTimeout(() => {
       setIsLoading(false);
-      toast.success("Successfully logged in!");
+      toast.success(t("loginSuccess"));
       navigate("/dashboard");
     }, 1000);
   };
@@ -34,7 +36,7 @@ const Auth = () => {
     setTimeout(() => {
       setIsLoading(false);
       localStorage.setItem("userAccountType", accountType);
-      toast.success("Account created successfully!");
+      toast.success(t("accountCreated"));
       navigate("/onboarding");
     }, 1000);
   };
@@ -46,20 +48,20 @@ const Auth = () => {
       <div className="container mx-auto px-4 py-16 flex items-center justify-center">
         <Card className="w-full max-w-md p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome to ViewDeal</h1>
-            <p className="text-muted-foreground">Sign in or create an account to continue</p>
+            <h1 className="text-3xl font-bold mb-2">{t("welcomeBack")}</h1>
+            <p className="text-muted-foreground">{t("signInToContinue")}</p>
           </div>
 
           <Tabs defaultValue="login">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="login">{t("signIn")}</TabsTrigger>
+              <TabsTrigger value="signup">{t("createAccount")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-email">{t("email")}</Label>
                   <Input 
                     id="login-email" 
                     type="email" 
@@ -68,7 +70,7 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <Label htmlFor="login-password">{t("password")}</Label>
                   <Input 
                     id="login-password" 
                     type="password"
@@ -76,7 +78,7 @@ const Auth = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading ? t("loggingIn") : t("signIn")}
                 </Button>
               </form>
             </TabsContent>
@@ -84,19 +86,19 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="account-type">Account Type</Label>
+                  <Label htmlFor="account-type">{t("accountType")}</Label>
                   <Select value={accountType} onValueChange={(value: "business" | "creator") => setAccountType(value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="creator">Creator</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
+                      <SelectItem value="creator">{t("creator")}</SelectItem>
+                      <SelectItem value="business">{t("business")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">{t("email")}</Label>
                   <Input 
                     id="signup-email" 
                     type="email" 
@@ -105,7 +107,7 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">{t("password")}</Label>
                   <Input 
                     id="signup-password" 
                     type="password"
@@ -113,7 +115,7 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm">Confirm Password</Label>
+                  <Label htmlFor="signup-confirm">{t("confirmPassword")}</Label>
                   <Input 
                     id="signup-confirm" 
                     type="password"
@@ -121,7 +123,7 @@ const Auth = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Create Account"}
+                  {isLoading ? t("creatingAccount") : t("createAccount")}
                 </Button>
               </form>
             </TabsContent>
