@@ -35,7 +35,8 @@ const Dashboard = () => {
       business: "FitLife Pro",
       status: "accepted",
       reward: "€150",
-      requiredViews: "100,000",
+      totalReward: 150,
+      requiredViews: 100000,
       deadline: "14 days",
       hasChat: true,
     },
@@ -45,7 +46,8 @@ const Dashboard = () => {
       business: "TechGear EU",
       status: "pending",
       reward: "€200",
-      requiredViews: "150,000",
+      totalReward: 200,
+      requiredViews: 150000,
       deadline: "14 days",
       hasChat: false,
     },
@@ -55,7 +57,10 @@ const Dashboard = () => {
       business: "StyleHub",
       status: "submitted",
       reward: "€100",
-      requiredViews: "80,000",
+      totalReward: 100,
+      requiredViews: 80000,
+      actualViews: 85243,
+      videoUrl: "https://tiktok.com/@user/video/123456",
       deadline: "Awaiting verification",
       hasChat: true,
     },
@@ -66,9 +71,12 @@ const Dashboard = () => {
       id: 1,
       offer: "Fashion Collection Showcase",
       submittedDate: "2 days ago",
-      views: "85,243",
+      actualViews: 85243,
+      requiredViews: 80000,
+      totalReward: 100,
       status: "pending_verification",
-      proofUrl: "https://instagram.com/p/...",
+      proofUrl: "https://tiktok.com/@user/video/123456",
+      calculatedEarnings: 106.55, // (85243 / 80000) * 100
     },
   ];
 
@@ -158,8 +166,15 @@ const Dashboard = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Eye className="h-4 w-4 text-muted-foreground" />
-                        <span>{app.requiredViews} views</span>
+                        <span>{app.requiredViews.toLocaleString()} {t("views")}</span>
                       </div>
+                      {app.actualViews && (
+                        <div className="flex items-center gap-1 text-success">
+                          <span className="text-xs">
+                            {app.actualViews.toLocaleString()} {t("actualViews")} ({((app.actualViews / app.requiredViews) * 100).toFixed(1)}%)
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span>{app.deadline}</span>
@@ -258,20 +273,30 @@ const Dashboard = () => {
                     {getStatusBadge(submission.status)}
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-4 p-4 bg-secondary/30 rounded-lg">
+                  <div className="grid sm:grid-cols-3 gap-4 p-4 bg-secondary/30 rounded-lg">
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">View Count</p>
-                      <p className="text-lg font-bold">{submission.views}</p>
+                      <p className="text-sm text-muted-foreground mb-1">{t("viewCount")}</p>
+                      <p className="text-lg font-bold">{submission.actualViews.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("requiredViews")}: {submission.requiredViews.toLocaleString()}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Proof URL</p>
+                      <p className="text-sm text-muted-foreground mb-1">{t("calculatedEarnings")}</p>
+                      <p className="text-lg font-bold text-success">€{submission.calculatedEarnings.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {((submission.actualViews / submission.requiredViews) * 100).toFixed(1)}% {t("ofTarget")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">{t("proofURL")}</p>
                       <a
                         href={submission.proofUrl}
-                        className="text-sm text-primary hover:underline"
+                        className="text-sm text-primary hover:underline break-all"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        View Content
+                        {t("viewContent")}
                       </a>
                     </div>
                   </div>

@@ -206,6 +206,13 @@ const translations: Record<Language, Record<string, string>> = {
     chatOnWhatsApp: "Chat on WhatsApp",
     supportAvailability: "Our support team is available Monday to Friday, 9 AM - 6 PM CET",
     sendEmailButton: "Send Email",
+    totalRewardAmount: "Total Reward Amount (€)",
+    totalRewardDesc: "Total amount that will be distributed based on percentage of views achieved",
+    calculatedEarnings: "Calculated Earnings",
+    ofTarget: "of target",
+    actualViews: "actual views",
+    freeGiftDetails: "Free Gift Details",
+    totalReward: "Total Reward",
   },
   it: {
     // Navbar
@@ -402,6 +409,13 @@ const translations: Record<Language, Record<string, string>> = {
     chatOnWhatsApp: "Chatta su WhatsApp",
     supportAvailability: "Il nostro team di supporto è disponibile dal lunedì al venerdì, 9:00 - 18:00 CET",
     sendEmailButton: "Invia Email",
+    totalRewardAmount: "Importo Ricompensa Totale (€)",
+    totalRewardDesc: "Importo totale che verrà distribuito in base alla percentuale di visualizzazioni raggiunte",
+    calculatedEarnings: "Guadagni Calcolati",
+    ofTarget: "dell'obiettivo",
+    actualViews: "visualizzazioni effettive",
+    freeGiftDetails: "Dettagli Regalo Gratuito",
+    totalReward: "Ricompensa Totale",
   },
   es: {
     // Navbar
@@ -598,6 +612,13 @@ const translations: Record<Language, Record<string, string>> = {
     chatOnWhatsApp: "Chatea en WhatsApp",
     supportAvailability: "Nuestro equipo de soporte está disponible de lunes a viernes, 9 AM - 6 PM CET",
     sendEmailButton: "Enviar Email",
+    totalRewardAmount: "Monto Total de Recompensa (€)",
+    totalRewardDesc: "Monto total que se distribuirá según el porcentaje de vistas alcanzadas",
+    calculatedEarnings: "Ganancias Calculadas",
+    ofTarget: "del objetivo",
+    actualViews: "vistas reales",
+    freeGiftDetails: "Detalles del Regalo Gratuito",
+    totalReward: "Recompensa Total",
   },
 };
 

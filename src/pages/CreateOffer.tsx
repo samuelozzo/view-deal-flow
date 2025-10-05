@@ -35,7 +35,8 @@ const CreateOffer = () => {
     discountDetails: "",
     freeGiftDetails: "",
     requiredViews: "",
-    platform: "TikTok"
+    platform: "TikTok",
+    totalRewardAmount: ""
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -135,18 +136,18 @@ const CreateOffer = () => {
 
               {rewardType === "cash" && (
                 <div className="space-y-2">
-                  <Label htmlFor="cashAmount">{t("cashAmount")}</Label>
+                  <Label htmlFor="totalRewardAmount">{t("totalRewardAmount")}</Label>
                   <Input
-                    id="cashAmount"
+                    id="totalRewardAmount"
                     type="number"
                     step="0.01"
-                    placeholder="E.g., 1.50"
-                    value={formData.cashAmount}
-                    onChange={(e) => setFormData({ ...formData, cashAmount: e.target.value })}
+                    placeholder="E.g., 150.00"
+                    value={formData.totalRewardAmount}
+                    onChange={(e) => setFormData({ ...formData, totalRewardAmount: e.target.value })}
                     required
                   />
                   <p className="text-sm text-muted-foreground">
-                    {t("cashAmountDesc")}
+                    {t("totalRewardDesc")}
                   </p>
                 </div>
               )}
