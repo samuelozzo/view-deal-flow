@@ -76,7 +76,7 @@ const Dashboard = () => {
       totalReward: 100,
       status: "pending_verification",
       proofUrl: "https://tiktok.com/@user/video/123456",
-      calculatedEarnings: 106.55, // (85243 / 80000) * 100
+      calculatedEarnings: Math.min((85243 / 80000) * 100, 100), // Capped at 100%
     },
   ];
 
@@ -285,7 +285,7 @@ const Dashboard = () => {
                       <p className="text-sm text-muted-foreground mb-1">{t("calculatedEarnings")}</p>
                       <p className="text-lg font-bold text-success">€{submission.calculatedEarnings.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {((submission.actualViews / submission.requiredViews) * 100).toFixed(1)}% {t("ofTarget")}
+                        {Math.min((submission.actualViews / submission.requiredViews) * 100, 100).toFixed(1)}% {t("ofTarget")}
                       </p>
                     </div>
                     <div>
