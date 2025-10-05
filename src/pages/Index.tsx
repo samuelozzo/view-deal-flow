@@ -61,10 +61,10 @@ const Index = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button variant="hero" size="lg" asChild>
-                  <Link to="/onboarding">{t("startCreatingDeals")}</Link>
+                  <Link to="/how-it-works">{t("learnHowItWorks")}</Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
-                  <Link to="/offers">{t("browseOffers")}</Link>
+                  <Link to="/onboarding">{t("startCreatingDeals")}</Link>
                 </Button>
               </div>
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -113,18 +113,18 @@ const Index = () => {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-20">
+      {/* How It Works Preview */}
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               {t("howItWorks")}
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
               {t("howItWorksDescription")}
             </p>
           </div>
-          <div className="grid md:grid-cols-5 gap-6">
+          <div className="grid md:grid-cols-5 gap-6 mb-12">
             {steps.map((step, index) => (
               <div key={index} className="relative">
                 <div className="text-center">
@@ -139,6 +139,11 @@ const Index = () => {
                 )}
               </div>
             ))}
+          </div>
+          <div className="text-center">
+            <Button variant="hero" size="lg" asChild>
+              <Link to="/how-it-works">{t("seeFullProcess")}</Link>
+            </Button>
           </div>
         </div>
       </section>
