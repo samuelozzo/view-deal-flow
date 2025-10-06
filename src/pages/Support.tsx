@@ -11,24 +11,24 @@ const Support = () => {
 
   const faqs = [
     {
-      question: "How does the escrow payment system work?",
-      answer: "When a brand accepts your application, they fund the escrow. The payment is held securely until you submit proof of views and it's verified after 14 days."
+      question: t("faqQuestion1"),
+      answer: t("faqAnswer1")
     },
     {
-      question: "What proof do I need to submit?",
-      answer: "You need to submit a screenshot of your view count and the URL of your content. The view count must be checked 14 days after posting."
+      question: t("faqQuestion2"),
+      answer: t("faqAnswer2")
     },
     {
-      question: "Which platforms are supported?",
-      answer: "Currently, ViewDeal supports TikTok, Instagram, and YouTube for view verification."
+      question: t("faqQuestion3"),
+      answer: t("faqAnswer3")
     },
     {
-      question: "What if I don't reach the required views?",
-      answer: "If the view count doesn't meet the requirement after 14 days, the brand can choose to release partial payment or return the escrow amount."
+      question: t("faqQuestion4"),
+      answer: t("faqAnswer4")
     },
     {
-      question: "Is ViewDeal available outside the EU?",
-      answer: "Currently, ViewDeal operates exclusively within the European Union to ensure compliance with EU regulations."
+      question: t("faqQuestion5"),
+      answer: t("faqAnswer5")
     }
   ];
 

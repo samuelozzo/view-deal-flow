@@ -23,7 +23,7 @@ const Dashboard = () => {
   const handleProofSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitDialogOpen(false);
-    toast.success("Proof submitted successfully! Awaiting verification.");
+    toast.success(t("proofSubmitted") + "!");
     setActiveTab("submissions");
   };
 
@@ -82,11 +82,11 @@ const Dashboard = () => {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
-      accepted: { variant: "success", label: "Accepted" },
-      pending: { variant: "warning", label: "Pending Review" },
-      submitted: { variant: "accent", label: "Proof Submitted" },
-      pending_verification: { variant: "warning", label: "Verifying" },
-      completed: { variant: "success", label: "Completed" },
+      accepted: { variant: "success", label: t("accepted") },
+      pending: { variant: "warning", label: t("pendingReview") },
+      submitted: { variant: "accent", label: t("proofSubmitted") },
+      pending_verification: { variant: "warning", label: t("verifying") },
+      completed: { variant: "success", label: t("completed") },
     };
     const config = variants[status] || { variant: "default", label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -104,7 +104,7 @@ const Dashboard = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Active Deals</p>
+                  <p className="text-sm text-muted-foreground">{t("activeDeals")}</p>
                   <p className="text-2xl font-bold">3</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-primary" />
@@ -113,7 +113,7 @@ const Dashboard = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Earnings</p>
+                  <p className="text-sm text-muted-foreground">{t("totalEarnings")}</p>
                   <p className="text-2xl font-bold">€450</p>
                 </div>
                 <Euro className="h-8 w-8 text-success" />
@@ -122,7 +122,7 @@ const Dashboard = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Pending Payment</p>
+                  <p className="text-sm text-muted-foreground">{t("pendingPayment")}</p>
                   <p className="text-2xl font-bold">€100</p>
                 </div>
                 <Clock className="h-8 w-8 text-warning" />
@@ -131,7 +131,7 @@ const Dashboard = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Views</p>
+                  <p className="text-sm text-muted-foreground">{t("totalViews")}</p>
                   <p className="text-2xl font-bold">235K</p>
                 </div>
                 <Eye className="h-8 w-8 text-accent" />
@@ -143,8 +143,8 @@ const Dashboard = () => {
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="applications">My Applications</TabsTrigger>
-            <TabsTrigger value="submissions">Submissions</TabsTrigger>
+            <TabsTrigger value="applications">{t("myApplications")}</TabsTrigger>
+            <TabsTrigger value="submissions">{t("submissions")}</TabsTrigger>
           </TabsList>
 
           {/* Applications Tab */}
@@ -189,7 +189,7 @@ const Dashboard = () => {
                           <Button variant="outline" size="sm" asChild>
                             <Link to={`/chat/${app.id}`}>
                               <MessageSquare className="h-4 w-4 mr-2" />
-                              Open Chat
+                              {t("openChat")}
                             </Link>
                           </Button>
                         )}
@@ -197,16 +197,16 @@ const Dashboard = () => {
                           <DialogTrigger asChild>
                             <Button variant="hero" size="sm">
                               <Upload className="h-4 w-4 mr-2" />
-                              Submit Proof
+                              {t("submitProof")}
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Submit Proof of Performance</DialogTitle>
+                              <DialogTitle>{t("submitProofTitle")}</DialogTitle>
                             </DialogHeader>
                             <form onSubmit={handleProofSubmit} className="space-y-4">
                               <div className="space-y-2">
-                                <Label htmlFor="proof-url">Content URL</Label>
+                                <Label htmlFor="proof-url">{t("contentURL")}</Label>
                                 <Input 
                                   id="proof-url" 
                                   type="url" 
@@ -215,7 +215,7 @@ const Dashboard = () => {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="proof-screenshot">Screenshot Upload</Label>
+                                <Label htmlFor="proof-screenshot">{t("screenshotUpload")}</Label>
                                 <Input 
                                   id="proof-screenshot" 
                                   type="file" 
@@ -224,7 +224,7 @@ const Dashboard = () => {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="view-count">View Count</Label>
+                                <Label htmlFor="view-count">{t("viewCount")}</Label>
                                 <Input 
                                   id="view-count" 
                                   type="number" 
@@ -232,7 +232,7 @@ const Dashboard = () => {
                                   required
                                 />
                               </div>
-                              <Button type="submit" className="w-full">Submit Proof</Button>
+                              <Button type="submit" className="w-full">{t("submitProof")}</Button>
                             </form>
                           </DialogContent>
                         </Dialog>
@@ -240,7 +240,7 @@ const Dashboard = () => {
                     )}
                     {app.status === "pending" && (
                       <Button variant="ghost" size="sm" disabled>
-                        Awaiting Review
+                        {t("awaitingReview")}
                       </Button>
                     )}
                     {app.status === "submitted" && (
@@ -249,7 +249,7 @@ const Dashboard = () => {
                         size="sm"
                         onClick={() => setActiveTab("submissions")}
                       >
-                        View Submission
+                        {t("viewSubmission")}
                       </Button>
                     )}
                   </div>
@@ -267,7 +267,7 @@ const Dashboard = () => {
                     <div>
                       <h3 className="font-bold text-lg mb-1">{submission.offer}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Submitted {submission.submittedDate}
+                        {t("submitted")} {submission.submittedDate}
                       </p>
                     </div>
                     {getStatusBadge(submission.status)}
@@ -304,7 +304,7 @@ const Dashboard = () => {
                   <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg border border-warning/20">
                     <Clock className="h-5 w-5 text-warning" />
                     <p className="text-sm">
-                      Awaiting verification. Payment will be released once approved.
+                      {t("awaitingVerification")}
                     </p>
                   </div>
                 </div>
