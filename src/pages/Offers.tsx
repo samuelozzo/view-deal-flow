@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/Navbar";
 import { Search, TrendingUp, Euro, Eye, Clock, Instagram, Youtube } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-// Mock data
-const mockOffers = [
+// Mock data - with reward claiming information
+const initialMockOffers = [
   {
     id: 1,
     title: "Fitness Brand Product Review",
@@ -17,11 +18,14 @@ const mockOffers = [
     reward: "150",
     rewardType: "cash",
     requiredViews: "100,000",
+    targetViews: 100000,
     platform: "Instagram",
     timeframe: "14 days",
     category: "Fitness",
     escrowFunded: true,
     applications: 12,
+    totalRewardCents: 15000, // €150
+    claimedRewardCents: 6750, // €67.50 (45% claimed)
   },
   {
     id: 2,
@@ -30,11 +34,14 @@ const mockOffers = [
     reward: "200 + Free Product",
     rewardType: "cash",
     requiredViews: "150,000",
+    targetViews: 150000,
     platform: "YouTube",
     timeframe: "14 days",
     category: "Technology",
     escrowFunded: true,
     applications: 8,
+    totalRewardCents: 20000, // €200
+    claimedRewardCents: 12400, // €124.00 (62% claimed)
   },
   {
     id: 3,
@@ -43,11 +50,14 @@ const mockOffers = [
     reward: "100",
     rewardType: "cash",
     requiredViews: "80,000",
+    targetViews: 80000,
     platform: "TikTok",
     timeframe: "14 days",
     category: "Fashion",
     escrowFunded: true,
     applications: 15,
+    totalRewardCents: 10000, // €100
+    claimedRewardCents: 2800, // €28.00 (28% claimed)
   },
   {
     id: 4,
@@ -56,17 +66,43 @@ const mockOffers = [
     reward: "120",
     rewardType: "cash",
     requiredViews: "90,000",
+    targetViews: 90000,
     platform: "Instagram",
     timeframe: "14 days",
     category: "Lifestyle",
     escrowFunded: true,
     applications: 6,
+    totalRewardCents: 12000, // €120
+    claimedRewardCents: 8520, // €85.20 (71% claimed)
   },
 ];
 
 const Offers = () => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
+  const [mockOffers, setMockOffers] = useState(initialMockOffers);
+
+  // Auto-refresh data every 5 seconds (simulated)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMockOffers((prevOffers) =>
+        prevOffers.map((offer) => {
+          // Simulate small incremental claims (random small increase)
+          const increment = Math.random() * 100; // Random increment up to €1
+          const newClaimed = Math.min(
+            offer.claimedRewardCents + increment,
+            offer.totalRewardCents
+          );
+          return {
+            ...offer,
+            claimedRewardCents: newClaimed,
+          };
+        })
+      );
+    }, 5000); // Update every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,6 +163,31 @@ const Offers = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">{t("reward")}</p>
                     <p className="font-bold text-primary">{offer.reward}</p>
+                  </div>
+                </div>
+
+                {/* Reward Claiming Progress */}
+                <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Reward Pool</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {Math.round((offer.claimedRewardCents / offer.totalRewardCents) * 100)}% claimed
+                    </Badge>
+                  </div>
+                  <Progress 
+                    value={(offer.claimedRewardCents / offer.totalRewardCents) * 100} 
+                    className="h-2"
+                  />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      €{(offer.claimedRewardCents / 100).toFixed(2)} / €{(offer.totalRewardCents / 100).toFixed(2)}
+                    </span>
+                    <span className="font-semibold text-success">
+                      €{((offer.totalRewardCents - offer.claimedRewardCents) / 100).toFixed(2)} left
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
+                    Rate: €{((offer.totalRewardCents / 100) / (offer.targetViews / 1000)).toFixed(2)} per 1,000 views
                   </div>
                 </div>
 
