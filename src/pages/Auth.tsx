@@ -21,6 +21,7 @@ const Auth = () => {
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<"business" | "creator">("creator");
+  const [displayName, setDisplayName] = useState("");
 
   // Check if user is already logged in
   useEffect(() => {
@@ -90,6 +91,12 @@ const Auth = () => {
         setIsLoading(false);
         return;
       }
+
+      if (!displayName.trim()) {
+        toast.error(accountType === "creator" ? "Nome utente richiesto" : "Nome azienda richiesto");
+        setIsLoading(false);
+        return;
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -105,7 +112,7 @@ const Auth = () => {
         emailRedirectTo: `${window.location.origin}/`,
         data: {
           account_type: accountType,
-          display_name: email.split('@')[0]
+          display_name: displayName.trim()
         }
       }
     });
@@ -175,7 +182,10 @@ const Auth = () => {
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="account-type">{t("accountType")}</Label>
-                  <Select value={accountType} onValueChange={(value: "business" | "creator") => setAccountType(value)}>
+                  <Select value={accountType} onValueChange={(value: "business" | "creator") => {
+                    setAccountType(value);
+                    setDisplayName("");
+                  }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -184,6 +194,19 @@ const Auth = () => {
                       <SelectItem value="business">{t("business")}</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="display-name">
+                    {accountType === "creator" ? "Nome Utente" : "Nome Azienda"}
+                  </Label>
+                  <Input 
+                    id="display-name"
+                    type="text"
+                    placeholder={accountType === "creator" ? "Il tuo nome utente" : "Nome della tua azienda"}
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">{t("email")}</Label>

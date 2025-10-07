@@ -162,6 +162,16 @@ const Navbar = () => {
                 Admin Dashboard
               </Link>
             )}
+            {isLoggedIn && (
+              <Link
+                to="/account-settings"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive("/account-settings") ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                Impostazioni
+              </Link>
+            )}
             <Link
               to="/support"
               className={`text-sm font-medium transition-colors hover:text-primary ${
@@ -259,6 +269,15 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Admin Dashboard
+              </Link>
+            )}
+            {isLoggedIn && (
+              <Link
+                to="/account-settings"
+                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Impostazioni
               </Link>
             )}
             <Link

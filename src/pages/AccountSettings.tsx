@@ -1,0 +1,192 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import Navbar from "@/components/Navbar";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+const AccountSettings = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [accountType, setAccountType] = useState<string>("");
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name, bio, account_type')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      setDisplayName(data?.display_name || "");
+      setBio(data?.bio || "");
+      setAccountType(data?.account_type || "");
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      toast.error("Errore nel caricamento del profilo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: displayName.trim(),
+          bio: bio.trim(),
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      toast.success("Impostazioni salvate con successo!");
+    } catch (error: any) {
+      console.error("Error saving profile:", error);
+      toast.error(error.message || "Errore nel salvataggio delle impostazioni");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Impostazioni Account</h1>
+          <p className="text-muted-foreground">Gestisci le tue informazioni personali</p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Informazioni Profilo</CardTitle>
+            <CardDescription>
+              Aggiorna i tuoi dati personali
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSave} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={user?.email || ""}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  L'email non può essere modificata
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="account-type">Tipo Account</Label>
+                <Input
+                  id="account-type"
+                  value={accountType === "creator" ? "Creator" : "Business"}
+                  disabled
+                  className="bg-muted capitalize"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Il tipo di account non può essere modificato
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="display-name">
+                  {accountType === "creator" ? "Nome Utente" : "Nome Azienda"}
+                </Label>
+                <Input
+                  id="display-name"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder={accountType === "creator" ? "Il tuo nome utente" : "Nome della tua azienda"}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio (opzionale)</Label>
+                <Textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Racconta qualcosa di te..."
+                  rows={4}
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {bio.length}/500 caratteri
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <Button 
+                  type="submit" 
+                  disabled={saving || !displayName.trim()}
+                  className="flex-1"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvataggio...
+                    </>
+                  ) : (
+                    "Salva Modifiche"
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => navigate("/dashboard")}
+                  disabled={saving}
+                >
+                  Annulla
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default AccountSettings;

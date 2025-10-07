@@ -391,16 +391,6 @@ const Dashboard = () => {
                                     onChange={(e) => setVideoUrl(e.target.value)}
                                   />
                                 </div>
-                                <div>
-                                  <Label htmlFor="videoViews">Current Views</Label>
-                                  <Input
-                                    id="videoViews"
-                                    type="number"
-                                    placeholder="0"
-                                    value={videoViews}
-                                    onChange={(e) => setVideoViews(e.target.value)}
-                                  />
-                                </div>
                                 <Button 
                                   onClick={handleSubmitVideo} 
                                   className="w-full"
