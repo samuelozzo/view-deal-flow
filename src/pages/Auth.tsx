@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Validation schemas
+const emailSchema = z.string().email("Invalid email address");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -16,29 +22,109 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<"business" | "creator">("creator");
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Mock login
-    setTimeout(() => {
-      setIsLoading(false);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    // Validate input
+    try {
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    if (data.session) {
       toast.success(t("loginSuccess"));
       navigate("/dashboard");
-    }, 1000);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Mock signup
-    setTimeout(() => {
-      setIsLoading(false);
-      localStorage.setItem("userAccountType", accountType);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+
+    // Validate input
+    try {
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
+      
+      if (password !== confirmPassword) {
+        toast.error("Passwords do not match");
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+        data: {
+          account_type: accountType,
+          display_name: email.split('@')[0]
+        }
+      }
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      if (error.message.includes("already registered")) {
+        toast.error("This email is already registered. Please login instead.");
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
+
+    if (data.user) {
       toast.success(t("accountCreated"));
-      navigate("/onboarding");
-    }, 1000);
+      navigate("/dashboard");
+    }
   };
 
   return (
@@ -63,7 +149,8 @@ const Auth = () => {
                 <div className="space-y-2">
                   <Label htmlFor="login-email">{t("email")}</Label>
                   <Input 
-                    id="login-email" 
+                    id="login-email"
+                    name="email"
                     type="email" 
                     placeholder="you@example.com"
                     required
@@ -72,7 +159,8 @@ const Auth = () => {
                 <div className="space-y-2">
                   <Label htmlFor="login-password">{t("password")}</Label>
                   <Input 
-                    id="login-password" 
+                    id="login-password"
+                    name="password"
                     type="password"
                     required
                   />
@@ -100,7 +188,8 @@ const Auth = () => {
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">{t("email")}</Label>
                   <Input 
-                    id="signup-email" 
+                    id="signup-email"
+                    name="email"
                     type="email" 
                     placeholder="you@example.com"
                     required
@@ -109,16 +198,20 @@ const Auth = () => {
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">{t("password")}</Label>
                   <Input 
-                    id="signup-password" 
+                    id="signup-password"
+                    name="password"
                     type="password"
+                    minLength={6}
                     required
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-confirm">{t("confirmPassword")}</Label>
                   <Input 
-                    id="signup-confirm" 
+                    id="signup-confirm"
+                    name="confirmPassword"
                     type="password"
+                    minLength={6}
                     required
                   />
                 </div>

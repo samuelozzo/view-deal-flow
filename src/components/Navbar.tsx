@@ -1,23 +1,80 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, Globe, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const accountType = localStorage.getItem("userAccountType");
-  const isBusiness = accountType === "business";
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { language, setLanguage, t } = useLanguage();
   
   const isActive = (path: string) => location.pathname === path;
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+      
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('id', session.user.id)
+          .single();
+        
+        setUserRole(data?.account_type || null);
+      }
+    };
+    
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+      
+      if (session?.user) {
+        setTimeout(async () => {
+          const { data } = await supabase
+            .from('profiles')
+            .select('account_type')
+            .eq('id', session.user.id)
+            .single();
+          
+          setUserRole(data?.account_type || null);
+        }, 0);
+      } else {
+        setUserRole(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Error logging out");
+    } else {
+      toast.success("Logged out successfully");
+      navigate("/");
+    }
+  };
+
+  const isBusiness = userRole === "business";
 
   const languageLabels = {
     en: "English",
@@ -101,12 +158,21 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/auth">{t("signIn")}</Link>
-            </Button>
-            <Button variant="hero" size="sm" asChild>
-              <Link to="/onboarding">{t("getStarted")}</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/auth">{t("signIn")}</Link>
+                </Button>
+                <Button variant="hero" size="sm" asChild>
+                  <Link to="/onboarding">{t("getStarted")}</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -190,12 +256,21 @@ const Navbar = () => {
             </div>
 
             <div className="pt-4 space-y-2 border-t border-border">
-              <Button variant="ghost" className="w-full" asChild>
-                <Link to="/auth">{t("signIn")}</Link>
-              </Button>
-              <Button variant="hero" className="w-full" asChild>
-                <Link to="/onboarding">{t("getStarted")}</Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button variant="ghost" className="w-full" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" className="w-full" asChild>
+                    <Link to="/auth">{t("signIn")}</Link>
+                  </Button>
+                  <Button variant="hero" className="w-full" asChild>
+                    <Link to="/onboarding">{t("getStarted")}</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
