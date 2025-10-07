@@ -61,7 +61,7 @@ const Dashboard = () => {
       requiredViews: 80000,
       actualViews: 85243,
       videoUrl: "https://tiktok.com/@user/video/123456",
-      deadline: "Awaiting verification",
+      deadline: "In Escrow",
       hasChat: true,
     },
   ];
@@ -144,7 +144,7 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="applications">{t("myApplications")}</TabsTrigger>
-            <TabsTrigger value="submissions">{t("submissions")}</TabsTrigger>
+            <TabsTrigger value="submissions">In Escrow</TabsTrigger>
           </TabsList>
 
           {/* Applications Tab */}
@@ -304,7 +304,7 @@ const Dashboard = () => {
                   <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg border border-warning/20">
                     <Clock className="h-5 w-5 text-warning" />
                     <p className="text-sm">
-                      {t("awaitingVerification")}
+                      In Escrow
                     </p>
                   </div>
                 </div>

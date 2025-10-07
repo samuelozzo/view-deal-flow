@@ -216,9 +216,12 @@ const OfferDetail = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <Badge variant="accent">{offer.category}</Badge>
                     {offer.escrowFunded && (
-                      <Badge variant="success" className="flex items-center gap-1">
+                      <Badge 
+                        variant={offer.claimedRewardCents >= offer.totalRewardCents ? "default" : "success"} 
+                        className="flex items-center gap-1"
+                      >
                         <CheckCircle className="h-3 w-3" />
-                        {t("escrowFunded")}
+                        {offer.claimedRewardCents >= offer.totalRewardCents ? "Completed" : "Open"}
                       </Badge>
                     )}
                   </div>
@@ -232,19 +235,6 @@ const OfferDetail = () => {
                   <p className="text-muted-foreground leading-relaxed">
                     {offer.description}
                   </p>
-                </div>
-
-                {/* Requirements */}
-                <div>
-                  <h2 className="text-xl font-bold mb-3">{t("requirements")}</h2>
-                  <ul className="space-y-2">
-                    {offer.requirements.map((req, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground">{req}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </div>
             </Card>

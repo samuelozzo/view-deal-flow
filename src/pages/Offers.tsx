@@ -263,8 +263,11 @@ const Offers = () => {
                       {offer.category}
                     </Badge>
                     {offer.escrowFunded && (
-                      <Badge variant="success" className="text-xs">
-                        {t("funded")}
+                      <Badge 
+                        variant={offer.claimedRewardCents >= offer.totalRewardCents ? "default" : "success"} 
+                        className="text-xs"
+                      >
+                        {offer.claimedRewardCents >= offer.totalRewardCents ? "Completed" : "Open"}
                       </Badge>
                     )}
                   </div>
