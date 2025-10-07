@@ -24,7 +24,7 @@ const offerSchema = z.object({
   requiredViews: z.number()
     .positive("Required views must be a positive number")
     .max(1000000000, "Required views cannot exceed 1 billion"),
-  platform: z.enum(["TikTok", "Instagram", "YouTube"]),
+  platform: z.enum(["tiktok", "instagram", "youtube"]),
 });
 
 const cashRewardSchema = z.object({
@@ -60,7 +60,7 @@ const CreateOffer = () => {
     discountDetails: "",
     freeGiftDetails: "",
     requiredViews: "",
-    platform: "TikTok",
+    platform: "tiktok",
     totalRewardAmount: ""
   });
 
@@ -73,7 +73,7 @@ const CreateOffer = () => {
         title: formData.title,
         description: formData.description,
         requiredViews: Number(formData.requiredViews),
-        platform: formData.platform as "TikTok" | "Instagram" | "YouTube",
+        platform: formData.platform as "tiktok" | "instagram" | "youtube",
       };
       
       offerSchema.parse(baseData);
@@ -112,7 +112,7 @@ const CreateOffer = () => {
         business_id: user.id,
         title: formData.title,
         description: formData.description,
-        platform: formData.platform.toLowerCase() as any,
+        platform: formData.platform as any,
         reward_type: rewardType as any,
         total_reward_cents: totalRewardCents,
         required_views: Number(formData.requiredViews),
@@ -205,9 +205,9 @@ const CreateOffer = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TikTok">{t("tiktok")}</SelectItem>
-                    <SelectItem value="Instagram">{t("instagram")}</SelectItem>
-                    <SelectItem value="YouTube">{t("youtube")}</SelectItem>
+                    <SelectItem value="tiktok">{t("tiktok")}</SelectItem>
+                    <SelectItem value="instagram">{t("instagram")}</SelectItem>
+                    <SelectItem value="youtube">{t("youtube")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
