@@ -9,6 +9,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { z } from "zod";
+
+const offerSchema = z.object({
+  title: z.string()
+    .trim()
+    .min(1, "Title is required")
+    .max(200, "Title must be less than 200 characters"),
+  description: z.string()
+    .trim()
+    .min(1, "Description is required")
+    .max(2000, "Description must be less than 2000 characters"),
+  requiredViews: z.number()
+    .positive("Required views must be a positive number")
+    .max(1000000000, "Required views cannot exceed 1 billion"),
+  platform: z.enum(["TikTok", "Instagram", "YouTube"]),
+});
+
+const cashRewardSchema = z.object({
+  totalRewardAmount: z.number()
+    .positive("Total reward amount must be positive")
+    .max(1000000, "Total reward amount cannot exceed $1,000,000"),
+});
+
+const discountSchema = z.object({
+  discountDetails: z.string()
+    .trim()
+    .min(1, "Discount details are required")
+    .max(500, "Discount details must be less than 500 characters"),
+});
+
+const freeGiftSchema = z.object({
+  freeGiftDetails: z.string()
+    .trim()
+    .min(1, "Free gift details are required")
+    .max(500, "Free gift details must be less than 500 characters"),
+});
 
 const CreateOffer = () => {
   const navigate = useNavigate();
@@ -42,12 +78,47 @@ const CreateOffer = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    toast({
-      title: t("offerCreated"),
-      description: t("offerPostedSuccess"),
-    });
-    
-    navigate("/offers");
+    try {
+      // Validate basic offer fields
+      const baseData = {
+        title: formData.title,
+        description: formData.description,
+        requiredViews: Number(formData.requiredViews),
+        platform: formData.platform as "TikTok" | "Instagram" | "YouTube",
+      };
+      
+      offerSchema.parse(baseData);
+      
+      // Validate reward-specific fields
+      if (rewardType === "cash") {
+        cashRewardSchema.parse({
+          totalRewardAmount: Number(formData.totalRewardAmount),
+        });
+      } else if (rewardType === "discount") {
+        discountSchema.parse({
+          discountDetails: formData.discountDetails,
+        });
+      } else if (rewardType === "free") {
+        freeGiftSchema.parse({
+          freeGiftDetails: formData.freeGiftDetails,
+        });
+      }
+      
+      toast({
+        title: t("offerCreated"),
+        description: t("offerPostedSuccess"),
+      });
+      
+      navigate("/offers");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (

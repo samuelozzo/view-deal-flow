@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import { ArrowLeft, Send } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 // Mock data
 const mockChats = [
@@ -52,10 +54,18 @@ const mockChats = [
   },
 ];
 
+const messageSchema = z.object({
+  message: z.string()
+    .trim()
+    .min(1, "Message cannot be empty")
+    .max(1000, "Message must be less than 1000 characters"),
+});
+
 const Chat = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [message, setMessage] = useState("");
   
   const chat = mockChats.find((c) => c.id === Number(id));
@@ -73,9 +83,18 @@ const Chat = () => {
   }
 
   const handleSend = () => {
-    if (message.trim()) {
+    try {
+      messageSchema.parse({ message });
       // In real app, would send message here
       setMessage("");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Invalid Message",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
