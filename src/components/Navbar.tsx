@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe, LogOut } from "lucide-react";
+import { Menu, X, Globe, LogOut, User, Wallet as WalletIcon, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -142,16 +142,6 @@ const Navbar = () => {
             >
               {t("dashboard")}
             </Link>
-            {isLoggedIn && (
-              <Link
-                to="/wallet"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  isActive("/wallet") ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                Wallet
-              </Link>
-            )}
             {isBusiness && (
               <Link
                 to="/create-offer"
@@ -170,16 +160,6 @@ const Navbar = () => {
                 }`}
               >
                 Admin Dashboard
-              </Link>
-            )}
-            {isLoggedIn && (
-              <Link
-                to="/account-settings"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  isActive("/account-settings") ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                Impostazioni
               </Link>
             )}
             <Link
@@ -214,10 +194,33 @@ const Navbar = () => {
             </DropdownMenu>
 
             {isLoggedIn ? (
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    Account
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background z-50">
+                  <DropdownMenuItem asChild>
+                    <Link to="/wallet" className="cursor-pointer">
+                      <WalletIcon className="h-4 w-4 mr-2" />
+                      Wallet
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account-settings" className="cursor-pointer">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Impostazioni
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild>
@@ -263,15 +266,6 @@ const Navbar = () => {
             >
               {t("dashboard")}
             </Link>
-            {isLoggedIn && (
-              <Link
-                to="/wallet"
-                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Wallet
-              </Link>
-            )}
             {isBusiness && (
               <Link
                 to="/create-offer"
@@ -291,13 +285,24 @@ const Navbar = () => {
               </Link>
             )}
             {isLoggedIn && (
-              <Link
-                to="/account-settings"
-                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Impostazioni
-              </Link>
+              <>
+                <Link
+                  to="/wallet"
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <WalletIcon className="h-4 w-4 inline mr-2" />
+                  Wallet
+                </Link>
+                <Link
+                  to="/account-settings"
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Settings className="h-4 w-4 inline mr-2" />
+                  Impostazioni
+                </Link>
+              </>
             )}
             <Link
               to="/support"
