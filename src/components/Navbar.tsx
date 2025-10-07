@@ -142,6 +142,16 @@ const Navbar = () => {
             >
               {t("dashboard")}
             </Link>
+            {isLoggedIn && (
+              <Link
+                to="/wallet"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive("/wallet") ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                Wallet
+              </Link>
+            )}
             {isBusiness && (
               <Link
                 to="/create-offer"
@@ -253,6 +263,15 @@ const Navbar = () => {
             >
               {t("dashboard")}
             </Link>
+            {isLoggedIn && (
+              <Link
+                to="/wallet"
+                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Wallet
+              </Link>
+            )}
             {isBusiness && (
               <Link
                 to="/create-offer"
