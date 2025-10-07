@@ -9,7 +9,9 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, KeyRound } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { z } from "zod";
 
 const AccountSettings = () => {
   const { user } = useAuth();
@@ -19,6 +21,10 @@ const AccountSettings = () => {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [accountType, setAccountType] = useState<string>("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -68,6 +74,61 @@ const AccountSettings = () => {
       toast.error(error.message || "Errore nel salvataggio delle impostazioni");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate passwords
+    if (newPassword.length < 6) {
+      toast.error("La nuova password deve essere di almeno 6 caratteri");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Le password non corrispondono");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      toast.error("La nuova password deve essere diversa da quella attuale");
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      // First verify current password by trying to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        toast.error("Password attuale non corretta");
+        setChangingPassword(false);
+        return;
+      }
+
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      toast.success("Password modificata con successo!");
+      
+      // Clear password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      toast.error(error.message || "Errore nella modifica della password");
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -181,6 +242,79 @@ const AccountSettings = () => {
                   Annulla
                 </Button>
               </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" />
+              <CardTitle>Sicurezza</CardTitle>
+            </div>
+            <CardDescription>
+              Modifica la tua password
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordChange} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Password Attuale</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Inserisci la password attuale"
+                  required
+                  disabled={changingPassword}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nuova Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Almeno 6 caratteri"
+                  minLength={6}
+                  required
+                  disabled={changingPassword}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">Conferma Nuova Password</Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Reinserisci la nuova password"
+                  minLength={6}
+                  required
+                  disabled={changingPassword}
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+                className="w-full"
+              >
+                {changingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Modifica in corso...
+                  </>
+                ) : (
+                  "Modifica Password"
+                )}
+              </Button>
             </form>
           </CardContent>
         </Card>
