@@ -17,6 +17,7 @@ import Support from "./pages/Support";
 import Auth from "./pages/Auth";
 import CreateOffer from "./pages/CreateOffer";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/support" element={<Support />} />
               <Route path="/create-offer" element={<ProtectedRoute><CreateOffer /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

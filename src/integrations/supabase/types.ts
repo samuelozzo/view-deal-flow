@@ -136,6 +136,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           business_id: string
@@ -234,10 +267,12 @@ export type Database = {
       submissions: {
         Row: {
           actual_views: number
+          admin_note: string | null
           application_id: string
           calculated_earnings_cents: number
           content_url: string
           id: string
+          rejected_at: string | null
           screenshot_url: string | null
           status: Database["public"]["Enums"]["submission_status"]
           submitted_at: string
@@ -245,10 +280,12 @@ export type Database = {
         }
         Insert: {
           actual_views: number
+          admin_note?: string | null
           application_id: string
           calculated_earnings_cents?: number
           content_url: string
           id?: string
+          rejected_at?: string | null
           screenshot_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
           submitted_at?: string
@@ -256,10 +293,12 @@ export type Database = {
         }
         Update: {
           actual_views?: number
+          admin_note?: string | null
           application_id?: string
           calculated_earnings_cents?: number
           content_url?: string
           id?: string
+          rejected_at?: string | null
           screenshot_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
           submitted_at?: string

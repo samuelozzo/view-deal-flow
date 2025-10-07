@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const Navbar = () => {
   const location = useLocation();
@@ -137,6 +138,8 @@ const Navbar = () => {
             >
               {t("support")}
             </Link>
+            
+            {isLoggedIn && <NotificationBell />}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
