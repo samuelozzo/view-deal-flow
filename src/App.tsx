@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import HowItWorks from "./pages/HowItWorks";
 import Index from "./pages/Index";
 import Onboarding from "./pages/Onboarding";
@@ -22,24 +24,26 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <LanguageProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/offers" element={<Offers />} />
-            <Route path="/offers/:id" element={<OfferDetail />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/chat/:id" element={<Chat />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/create-offer" element={<CreateOffer />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
+              <Route path="/offers/:id" element={<ProtectedRoute><OfferDetail /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/create-offer" element={<ProtectedRoute><CreateOffer /></ProtectedRoute>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const offerSchema = z.object({
   title: z.string()
@@ -51,18 +52,6 @@ const CreateOffer = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
   
-  useEffect(() => {
-    const accountType = localStorage.getItem("userAccountType");
-    if (accountType !== "business") {
-      toast({
-        title: t("accessDenied"),
-        description: t("onlyBusinessCanPost"),
-        variant: "destructive"
-      });
-      navigate("/offers");
-    }
-  }, [navigate, toast, t]);
-  
   const [rewardType, setRewardType] = useState<"cash" | "discount" | "free">("cash");
   const [formData, setFormData] = useState({
     title: "",
@@ -75,7 +64,7 @@ const CreateOffer = () => {
     totalRewardAmount: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
@@ -89,11 +78,14 @@ const CreateOffer = () => {
       
       offerSchema.parse(baseData);
       
-      // Validate reward-specific fields
+      // Calculate total reward in cents
+      let totalRewardCents = 0;
+      
       if (rewardType === "cash") {
         cashRewardSchema.parse({
           totalRewardAmount: Number(formData.totalRewardAmount),
         });
+        totalRewardCents = Math.round(Number(formData.totalRewardAmount) * 100);
       } else if (rewardType === "discount") {
         discountSchema.parse({
           discountDetails: formData.discountDetails,
@@ -102,6 +94,40 @@ const CreateOffer = () => {
         freeGiftSchema.parse({
           freeGiftDetails: formData.freeGiftDetails,
         });
+      }
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create an offer",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create offer in database
+      const { error } = await supabase.from('offers').insert({
+        business_id: user.id,
+        title: formData.title,
+        description: formData.description,
+        platform: formData.platform.toLowerCase() as any,
+        reward_type: rewardType as any,
+        total_reward_cents: totalRewardCents,
+        required_views: Number(formData.requiredViews),
+        category: "Product Review",
+        status: "open" as any,
+      });
+
+      if (error) {
+        console.error("Error creating offer:", error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
       }
       
       toast({
@@ -115,6 +141,13 @@ const CreateOffer = () => {
         toast({
           title: "Validation Error",
           description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        console.error("Error:", error);
+        toast({
+          title: "Error",
+          description: "Failed to create offer",
           variant: "destructive",
         });
       }
