@@ -39,13 +39,31 @@ const OfferDetail = () => {
   const [applying, setApplying] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
   const [hasApplied, setHasApplied] = useState(false);
+  const [userAccountType, setUserAccountType] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchOffer();
       checkApplication();
+      fetchUserAccountType();
     }
   }, [id, user]);
+
+  const fetchUserAccountType = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', user.id)
+        .single();
+      
+      setUserAccountType(data?.account_type || null);
+    } catch (error) {
+      console.error("Error fetching user account type:", error);
+    }
+  };
 
   const fetchOffer = async () => {
     try {
@@ -305,7 +323,17 @@ const OfferDetail = () => {
               </CardContent>
             </Card>
 
-            {!hasApplied ? (
+            {userAccountType === 'business' ? (
+              <Card>
+                <CardContent className="py-6 text-center">
+                  <Badge variant="secondary" className="mb-2">ℹ️ Business Account</Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Solo gli account creator possono applicare alle offerte. 
+                    Gli account business possono creare offerte.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : !hasApplied ? (
               <Card>
                 <CardHeader>
                   <CardTitle>{t("applyNow")}</CardTitle>
