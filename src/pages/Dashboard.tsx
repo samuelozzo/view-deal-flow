@@ -60,10 +60,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) {
-      fetchAccountType();
-      fetchApplications();
+      loadData();
     }
   }, [user]);
+
+  const loadData = async () => {
+    const type = await fetchAccountType();
+    if (type) {
+      await fetchApplications(type);
+    }
+  };
 
   const fetchAccountType = async () => {
     try {
@@ -73,17 +79,21 @@ const Dashboard = () => {
         .eq('id', user?.id)
         .single();
       
-      setAccountType(data?.account_type || null);
+      const type = data?.account_type || null;
+      setAccountType(type);
+      return type;
     } catch (error) {
       console.error("Error fetching account type:", error);
+      return null;
     }
   };
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (type?: string | null) => {
     try {
       let query;
+      const userType = type || accountType;
       
-      if (accountType === 'business') {
+      if (userType === 'business') {
         // Business users see applications to their offers
         query = supabase
           .from('applications')
