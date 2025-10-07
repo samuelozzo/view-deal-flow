@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
-import { DollarSign, Eye, TrendingUp, MessageSquare, Upload, Video } from "lucide-react";
+import EscrowList from "@/components/EscrowList";
+import { DollarSign, Eye, TrendingUp, MessageSquare, Upload, Video, Wallet as WalletIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -229,10 +230,25 @@ const Dashboard = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t("dashboard")}</h1>
-          <p className="text-muted-foreground">{t("manageApplications")}</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{t("dashboard")}</h1>
+            <p className="text-muted-foreground">{t("manageApplications")}</p>
+          </div>
+          <Button asChild variant="outline">
+            <Link to="/wallet">
+              <WalletIcon className="h-4 w-4 mr-2" />
+              Wallet
+            </Link>
+          </Button>
         </div>
+
+        {/* Escrow List for Creators */}
+        {accountType === 'creator' && (
+          <div className="mb-8">
+            <EscrowList />
+          </div>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

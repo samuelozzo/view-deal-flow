@@ -178,22 +178,6 @@ const AdminDashboard = () => {
 
   const handleApprove = async (submission: SubmissionWithDetails) => {
     try {
-      // Update submission status
-      const { error: updateError } = await supabase
-        .from("submissions")
-        .update({
-          status: "verified",
-          verified_at: new Date().toISOString(),
-          admin_note: adminNote || null,
-        })
-        .eq("id", submission.id);
-
-      if (updateError) {
-        console.error("Error updating submission:", updateError);
-        throw updateError;
-      }
-
-      // Create escrow transaction
       // Calculate earnings based on views and offer reward
       const rewardPerView = submission.application.offer.total_reward_cents / submission.application.offer.required_views;
       const earningsCents = Math.floor(submission.actual_views * rewardPerView);
@@ -201,48 +185,103 @@ const AdminDashboard = () => {
       // Calculate release date (14 days from now)
       const releaseDate = new Date();
       releaseDate.setDate(releaseDate.getDate() + 14);
-      
+
+      // Get business wallet
+      const { data: businessWallet, error: walletError } = await supabase
+        .from("wallets")
+        .select("id, available_cents, reserved_cents")
+        .eq("user_id", submission.application.offer.business_id)
+        .single();
+
+      if (walletError || !businessWallet) {
+        throw new Error("Business wallet non trovato");
+      }
+
+      if (businessWallet.available_cents < earningsCents) {
+        throw new Error("Saldo insufficiente nel wallet business");
+      }
+
+      // Reserve funds from business wallet
+      const { error: reserveError } = await supabase
+        .from("wallets")
+        .update({
+          available_cents: businessWallet.available_cents - earningsCents,
+          reserved_cents: businessWallet.reserved_cents + earningsCents,
+        })
+        .eq("id", businessWallet.id);
+
+      if (reserveError) throw reserveError;
+
+      // Create wallet transaction for reservation
+      await supabase.from("wallet_transactions").insert({
+        wallet_id: businessWallet.id,
+        type: "escrow_reserve",
+        direction: "out",
+        amount_cents: earningsCents,
+        status: "completed",
+        reference_type: "submission",
+        reference_id: submission.id,
+        metadata: {
+          offer_id: submission.application.offer.id,
+        },
+      });
+
+      // Update submission status
+      const { error: submissionError } = await supabase
+        .from("submissions")
+        .update({
+          status: "verified",
+          calculated_earnings_cents: earningsCents,
+          verified_at: new Date().toISOString(),
+          admin_note: adminNote || null,
+        })
+        .eq("id", submission.id);
+
+      if (submissionError) throw submissionError;
+
+      // Create escrow transaction
       const { error: escrowError } = await supabase
         .from("escrow_transactions")
         .insert({
           offer_id: submission.application.offer.id,
           amount_cents: earningsCents,
           status: "funded",
+          creator_id: submission.application.creator_id,
+          submission_id: submission.id,
+          duration_days: 14,
+          scheduled_release_at: releaseDate.toISOString(),
           funded_at: new Date().toISOString(),
         });
 
-      if (escrowError) {
-        console.error("Error creating escrow:", escrowError);
-        throw escrowError;
-      }
+      if (escrowError) throw escrowError;
 
       // Send notification to creator
       await supabase.from("notifications").insert({
         user_id: submission.application.creator_id,
-        title: "Video Approvato! 🎉",
-        message: `Il tuo video per "${submission.application.offer.title}" è stato approvato. Riceverai €${(earningsCents / 100).toFixed(2)} tra 14 giorni.`,
-        type: "approval",
+        type: "escrow_started",
+        title: "Escrow Iniziato",
+        message: `Il tuo video è stato approvato! Hai guadagnato €${(earningsCents / 100).toFixed(2)}. L'importo verrà sbloccato entro 14 giorni (${releaseDate.toLocaleDateString("it-IT")}).`,
         link: `/dashboard`,
       });
 
       // Send notification to business
       await supabase.from("notifications").insert({
         user_id: submission.application.offer.business_id,
-        title: "Video Approvato",
-        message: `Un video per la tua offerta "${submission.application.offer.title}" è stato approvato. Periodo di escrow di 14 giorni iniziato.`,
-        type: "escrow_start",
+        type: "escrow_started",
+        title: "Task Completata",
+        message: `Il video per "${submission.application.offer.title}" è stato verificato. Escrow di €${(earningsCents / 100).toFixed(2)} avviato per 14 giorni.`,
         link: `/offers/${submission.application.offer.id}`,
       });
 
       toast({
         title: "Video approvato",
-        description: `Il video è stato approvato. Il creator riceverà €${(earningsCents / 100).toFixed(2)} tra 14 giorni.`,
+        description: "Escrow avviato con successo. Il pagamento verrà rilasciato automaticamente tra 14 giorni.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in handleApprove:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'approvazione del video.",
+        description: error.message || "Si è verificato un errore durante l'approvazione del video.",
         variant: "destructive",
       });
       throw error;
