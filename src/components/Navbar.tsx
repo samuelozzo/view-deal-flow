@@ -20,6 +20,7 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   
   const isActive = (path: string) => location.pathname === path;
@@ -31,13 +32,23 @@ const Navbar = () => {
       setIsLoggedIn(!!session);
       
       if (session?.user) {
-        const { data } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('account_type')
           .eq('id', session.user.id)
           .single();
         
-        setUserRole(data?.account_type || null);
+        setUserRole(profileData?.account_type || null);
+
+        // Check if user is admin
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .single();
+        
+        setIsAdmin(!!roleData);
       }
     };
     
@@ -49,16 +60,27 @@ const Navbar = () => {
       
       if (session?.user) {
         setTimeout(async () => {
-          const { data } = await supabase
+          const { data: profileData } = await supabase
             .from('profiles')
             .select('account_type')
             .eq('id', session.user.id)
             .single();
           
-          setUserRole(data?.account_type || null);
+          setUserRole(profileData?.account_type || null);
+
+          // Check if user is admin
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .eq('role', 'admin')
+            .single();
+          
+          setIsAdmin(!!roleData);
         }, 0);
       } else {
         setUserRole(null);
+        setIsAdmin(false);
       }
     });
 
@@ -128,6 +150,16 @@ const Navbar = () => {
                 }`}
               >
                 {t("postOffer")}
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive("/admin") ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                Admin Dashboard
               </Link>
             )}
             <Link
@@ -218,6 +250,15 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t("postOffer")}
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Admin Dashboard
               </Link>
             )}
             <Link
