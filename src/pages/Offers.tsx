@@ -5,8 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
-import { Search, TrendingUp, Euro, Eye, Clock, Instagram, Youtube } from "lucide-react";
+import { Search, TrendingUp, Euro, Eye, Clock, Instagram, Youtube, Filter } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock data - with reward claiming information
@@ -81,6 +88,8 @@ const Offers = () => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [mockOffers, setMockOffers] = useState(initialMockOffers);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [rewardFilter, setRewardFilter] = useState("all");
 
   // Auto-refresh data every 5 seconds (simulated)
   useEffect(() => {
@@ -104,6 +113,33 @@ const Offers = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Filter offers based on search, category, and reward
+  const filteredOffers = mockOffers.filter((offer) => {
+    // Search filter
+    const matchesSearch =
+      offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      offer.business.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Category filter
+    const matchesCategory =
+      categoryFilter === "all" || offer.category === categoryFilter;
+
+    // Reward filter
+    let matchesReward = true;
+    const rewardAmount = parseInt(offer.reward.replace(/[^0-9]/g, ""));
+    if (rewardFilter === "under-100") {
+      matchesReward = rewardAmount < 100;
+    } else if (rewardFilter === "100-150") {
+      matchesReward = rewardAmount >= 100 && rewardAmount <= 150;
+    } else if (rewardFilter === "150-200") {
+      matchesReward = rewardAmount >= 150 && rewardAmount <= 200;
+    } else if (rewardFilter === "over-200") {
+      matchesReward = rewardAmount > 200;
+    }
+
+    return matchesSearch && matchesCategory && matchesReward;
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -118,7 +154,7 @@ const Offers = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <div className="relative max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -129,11 +165,62 @@ const Offers = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          
+          {/* Filter Options */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filters:</span>
+            </div>
+            
+            {/* Category Filter */}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="Technology">Technology</SelectItem>
+                <SelectItem value="Fashion">Fashion</SelectItem>
+                <SelectItem value="Fitness">Fitness</SelectItem>
+                <SelectItem value="Lifestyle">Lifestyle</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Reward Filter */}
+            <Select value={rewardFilter} onValueChange={setRewardFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Reward Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Rewards</SelectItem>
+                <SelectItem value="under-100">Under €100</SelectItem>
+                <SelectItem value="100-150">€100 - €150</SelectItem>
+                <SelectItem value="150-200">€150 - €200</SelectItem>
+                <SelectItem value="over-200">Over €200</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Clear Filters */}
+            {(categoryFilter !== "all" || rewardFilter !== "all" || searchQuery !== "") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCategoryFilter("all");
+                  setRewardFilter("all");
+                  setSearchQuery("");
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Offers Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {mockOffers.map((offer) => (
+          {filteredOffers.map((offer) => (
             <Card
               key={offer.id}
               className="p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group"
@@ -235,10 +322,17 @@ const Offers = () => {
         </div>
 
         {/* Empty State */}
-        {mockOffers.length === 0 && (
+        {filteredOffers.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">{t("noOffersFound")}</p>
-            <Button variant="outline" onClick={() => setSearchQuery("")}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchQuery("");
+                setCategoryFilter("all");
+                setRewardFilter("all");
+              }}
+            >
               {t("clearSearch")}
             </Button>
           </div>
