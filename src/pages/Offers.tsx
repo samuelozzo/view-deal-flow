@@ -90,6 +90,7 @@ const initialMockOffers = [
     rewardType: "product",
     requiredViews: "50,000",
     targetViews: 50000,
+    viewsPerProduct: 5000, // 5,000 views required per product
     platform: "YouTube",
     timeframe: "14 days",
     category: "Technology",
@@ -304,6 +305,11 @@ const Offers = () => {
                           {offer.totalRewardCents - offer.claimedRewardCents} left
                         </span>
                       </div>
+                      {offer.viewsPerProduct && (
+                        <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
+                          Earn 1 product per {offer.viewsPerProduct.toLocaleString()} views
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
