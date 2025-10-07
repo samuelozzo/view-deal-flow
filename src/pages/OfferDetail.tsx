@@ -1,177 +1,149 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Euro, Eye, Clock, Instagram, Youtube, Users, CheckCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Eye, DollarSign, Clock, Users } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Mock data - matches Offers.tsx with reward claiming information
-const initialMockOffers = [
-  {
-    id: 1,
-    title: "Fitness Brand Product Review",
-    business: "FitLife Pro",
-    reward: "150",
-    rewardType: "cash",
-    requiredViews: "100,000",
-    targetViews: 100000,
-    platform: "Instagram",
-    timeframe: "14 days",
-    category: "Fitness",
-    escrowFunded: true,
-    applications: 12,
-    totalRewardCents: 15000, // €150
-    claimedRewardCents: 6750, // €67.50 (45% claimed)
-    description: "We're looking for fitness creators to review our new protein shake line. Create authentic content showing the product in your daily routine.",
-    requirements: [
-      "Minimum 50K followers on Instagram",
-      "Active engagement rate above 3%",
-      "Previous fitness/nutrition content",
-      "Must be based in EU",
-    ],
-  },
-  {
-    id: 2,
-    title: "Tech Gadget Unboxing",
-    business: "TechGear EU",
-    reward: "200 + Free Product",
-    rewardType: "cash",
-    requiredViews: "150,000",
-    targetViews: 150000,
-    platform: "YouTube",
-    timeframe: "14 days",
-    category: "Technology",
-    escrowFunded: true,
-    applications: 8,
-    totalRewardCents: 20000, // €200
-    claimedRewardCents: 12400, // €124.00 (62% claimed)
-    description: "Unbox and review our latest wireless earbuds. Show features, sound quality test, and honest opinion.",
-    requirements: [
-      "YouTube channel with 100K+ subscribers",
-      "Tech review experience",
-      "Professional video production",
-      "EU based",
-    ],
-  },
-  {
-    id: 3,
-    title: "Fashion Collection Showcase",
-    business: "StyleHub",
-    reward: "100",
-    rewardType: "cash",
-    requiredViews: "80,000",
-    targetViews: 80000,
-    platform: "TikTok",
-    timeframe: "14 days",
-    category: "Fashion",
-    escrowFunded: true,
-    applications: 15,
-    totalRewardCents: 10000, // €100
-    claimedRewardCents: 2800, // €28.00 (28% claimed)
-    description: "Showcase our new summer collection with 3-5 TikTok videos. Style the pieces your way and tag our brand.",
-    requirements: [
-      "Fashion/lifestyle content creator",
-      "30K+ TikTok followers",
-      "EU location",
-      "Creative styling skills",
-    ],
-  },
-  {
-    id: 4,
-    title: "Sustainable Living Challenge",
-    business: "EcoLife",
-    reward: "120",
-    rewardType: "cash",
-    requiredViews: "90,000",
-    targetViews: 90000,
-    platform: "Instagram",
-    timeframe: "14 days",
-    category: "Lifestyle",
-    escrowFunded: true,
-    applications: 6,
-    totalRewardCents: 12000, // €120
-    claimedRewardCents: 8520, // €85.20 (71% claimed)
-    description: "Create content around our eco-friendly products. Show how they fit into a sustainable lifestyle.",
-    requirements: [
-      "Sustainability/lifestyle focus",
-      "40K+ followers",
-      "Authentic voice",
-      "EU based",
-    ],
-  },
-  {
-    id: 5,
-    title: "Gaming Headset Review",
-    business: "AudioGear Pro",
-    reward: "3 Free Products",
-    rewardType: "product",
-    requiredViews: "50,000",
-    targetViews: 50000,
-    viewsPerProduct: 5000, // 5,000 views required per product
-    platform: "YouTube",
-    timeframe: "14 days",
-    category: "Technology",
-    escrowFunded: true,
-    applications: 9,
-    totalRewardCents: 3, // 3 products total
-    claimedRewardCents: 1, // 1 product claimed
-    description: "Review our premium gaming headset and share your honest opinion. We'll send you a free unit to keep, and you can earn additional units based on your video's performance.",
-    requirements: [
-      "Gaming or tech content creator",
-      "20K+ YouTube subscribers",
-      "High-quality video production",
-      "EU based",
-    ],
-  },
-];
+interface Offer {
+  id: string;
+  title: string;
+  description: string;
+  reward_type: string;
+  total_reward_cents: number;
+  claimed_reward_cents: number;
+  required_views: number;
+  platform: string;
+  category: string;
+  profiles?: {
+    display_name: string | null;
+  };
+}
 
 const OfferDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
-  const [mockOffers, setMockOffers] = useState(initialMockOffers);
-  
-  const offer = mockOffers.find((o) => o.id === Number(id));
+  const { user } = useAuth();
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState("");
+  const [hasApplied, setHasApplied] = useState(false);
 
-  // Auto-refresh data every 5 seconds (simulated)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMockOffers((prevOffers) =>
-        prevOffers.map((offer) => {
-          // Simulate small incremental claims
-          if (offer.rewardType === "product") {
-            // For products, occasionally claim one more product
-            const shouldClaim = Math.random() > 0.7; // 30% chance to claim
-            const newClaimed = shouldClaim 
-              ? Math.min(offer.claimedRewardCents + 1, offer.totalRewardCents)
-              : offer.claimedRewardCents;
-            return {
-              ...offer,
-              claimedRewardCents: newClaimed,
-            };
-          } else {
-            // For cash, small incremental claims (random small increase)
-            const increment = Math.random() * 100; // Random increment up to €1
-            const newClaimed = Math.min(
-              offer.claimedRewardCents + increment,
-              offer.totalRewardCents
-            );
-            return {
-              ...offer,
-              claimedRewardCents: newClaimed,
-            };
-          }
-        })
-      );
-    }, 5000); // Update every 5 seconds
+    if (id) {
+      fetchOffer();
+      checkApplication();
+    }
+  }, [id, user]);
 
-    return () => clearInterval(interval);
-  }, []);
+  const fetchOffer = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('offers')
+        .select(`
+          *,
+          profiles:business_id (
+            display_name
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      setOffer(data);
+    } catch (error: any) {
+      console.error("Error fetching offer:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load offer details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkApplication = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('offer_id', id)
+        .eq('creator_id', user.id)
+        .maybeSingle();
+
+      setHasApplied(!!data);
+    } catch (error) {
+      console.error("Error checking application:", error);
+    }
+  };
+
+  const handleApply = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to apply",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setApplying(true);
+
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .insert({
+          offer_id: id,
+          creator_id: user.id,
+          message: applicationMessage,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: t("applicationSubmitted"),
+        description: t("businessWillReview"),
+      });
+
+      setHasApplied(true);
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Error applying:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (!offer) {
     return (
@@ -185,193 +157,189 @@ const OfferDetail = () => {
     );
   }
 
-  const handleApply = () => {
-    toast({
-      title: t("applicationSubmitted"),
-      description: t("businessWillReview"),
-    });
-    navigate("/dashboard");
-  };
+  const progressPercentage = (offer.claimed_reward_cents / offer.total_reward_cents) * 100;
+  const businessName = offer.profiles?.display_name || "Unknown Business";
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Button variant="ghost" className="mb-6" asChild>
-          <Link to="/offers">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t("backToOffers")}
-          </Link>
+        <Button variant="ghost" onClick={() => navigate("/offers")} className="mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          {t("backToOffers")}
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="p-8">
-              <div className="space-y-6">
-                {/* Header */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge variant="accent">{offer.category}</Badge>
-                    {offer.escrowFunded && (
-                      <Badge 
-                        variant={offer.claimedRewardCents >= offer.totalRewardCents ? "default" : "success"} 
-                        className="flex items-center gap-1"
-                      >
-                        <CheckCircle className="h-3 w-3" />
-                        {offer.claimedRewardCents >= offer.totalRewardCents ? "Completed" : "Open"}
-                      </Badge>
-                    )}
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="space-y-2">
+                    <Badge variant={offer.reward_type === "cash" ? "default" : "secondary"}>
+                      {offer.reward_type === "cash" ? "💰 Cash" : offer.reward_type === "discount" ? "🏷️ Discount" : "🎁 Free Gift"}
+                    </Badge>
+                    <CardTitle className="text-3xl">{offer.title}</CardTitle>
+                    <CardDescription className="text-base">
+                      {t("by")} <span className="font-semibold">{businessName}</span>
+                    </CardDescription>
                   </div>
-                  <h1 className="text-3xl font-bold mb-2">{offer.title}</h1>
-                  <p className="text-lg text-muted-foreground">{offer.business}</p>
+                  <Badge variant="outline" className="capitalize">{offer.platform}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">{t("description")}</h3>
+                  <p className="text-muted-foreground">{offer.description}</p>
                 </div>
 
-                {/* Description */}
-                <div>
-                  <h2 className="text-xl font-bold mb-3">{t("aboutThisOffer")}</h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {offer.description}
-                  </p>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("category")}</p>
+                      <p className="font-semibold">{offer.category}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("platform")}</p>
+                      <p className="font-semibold capitalize">{offer.platform}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("howItWorks")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ol className="space-y-4">
+                  <li className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                      1
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">{t("applyForOffer")}</h4>
+                      <p className="text-sm text-muted-foreground">{t("submitApplication")}</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">{t("getAccepted")}</h4>
+                      <p className="text-sm text-muted-foreground">{t("businessReviews")}</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                      3
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">{t("createContent")}</h4>
+                      <p className="text-sm text-muted-foreground">{t("postYourContent")}</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                      4
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">{t("getPaid")}</h4>
+                      <p className="text-sm text-muted-foreground">{t("receiveReward")}</p>
+                    </div>
+                  </li>
+                </ol>
+              </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Reward Card */}
-            <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary-glow/5 border-primary/20">
-              <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("rewardDetails")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">{t("reward")}</p>
-                  <div className="flex items-center gap-2">
-                    <Euro className="h-6 w-6 text-primary" />
-                    <p className="text-3xl font-bold text-primary">{offer.reward}</p>
-                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{t("totalReward")}</p>
+                  <p className="text-3xl font-bold text-primary">
+                    ${(offer.total_reward_cents / 100).toFixed(2)}
+                  </p>
                 </div>
 
-                {/* Reward Pool Progress */}
-                <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Reward Pool</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {Math.round((offer.claimedRewardCents / offer.totalRewardCents) * 100)}% claimed
-                    </Badge>
+                {offer.reward_type === "cash" && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{t("claimed")}</span>
+                      <span className="font-semibold">
+                        ${(offer.claimed_reward_cents / 100).toFixed(2)}
+                      </span>
+                    </div>
+                    <Progress value={progressPercentage} className="h-2" />
+                    <p className="text-xs text-muted-foreground">
+                      {progressPercentage.toFixed(1)}% {t("claimed")}
+                    </p>
                   </div>
-                  <Progress 
-                    value={(offer.claimedRewardCents / offer.totalRewardCents) * 100} 
-                    className="h-2"
-                  />
-                  {offer.rewardType === "product" ? (
-                    <>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">
-                          {offer.claimedRewardCents} / {offer.totalRewardCents} products claimed
-                        </span>
-                        <span className="font-semibold text-success">
-                          {offer.totalRewardCents - offer.claimedRewardCents} left
-                        </span>
-                      </div>
-                      {offer.viewsPerProduct && (
-                        <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
-                          Earn 1 product per {offer.viewsPerProduct.toLocaleString()} views
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">
-                          €{(offer.claimedRewardCents / 100).toFixed(2)} / €{(offer.totalRewardCents / 100).toFixed(2)}
-                        </span>
-                        <span className="font-semibold text-success">
-                          €{((offer.totalRewardCents - offer.claimedRewardCents) / 100).toFixed(2)} left
-                        </span>
-                      </div>
-                      <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
-                        Rate: €{((offer.totalRewardCents / 100) / (offer.targetViews / 1000)).toFixed(2)} per 1,000 views
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="space-y-3 pt-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Eye className="h-4 w-4" />
-                      {t("requiredViews")}
-                    </span>
-                    <span className="font-semibold">{offer.requiredViews}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {t("timeframe")}
-                    </span>
-                    <span className="font-semibold">{offer.timeframe}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{t("platform")}</span>
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      {offer.platform === "Instagram" && <Instagram className="h-3 w-3" />}
-                      {offer.platform === "YouTube" && <Youtube className="h-3 w-3" />}
-                      {offer.platform}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {t("applications")}
-                    </span>
-                    <span className="font-semibold">{offer.applications}</span>
-                  </div>
-                </div>
-
-                <Button variant="hero" className="w-full" size="lg" onClick={handleApply}>
-                  {t("applyNow")}
-                </Button>
-              </div>
+                )}
+              </CardContent>
             </Card>
 
-            {/* Info Card */}
-            <Card className="p-6">
-              <h3 className="font-bold mb-3">{t("howItWorksTitle")}</h3>
-              <ol className="space-y-3 text-sm">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    1
-                  </span>
-                  <span className="text-muted-foreground">{t("applyToOffer")}</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    2
-                  </span>
-                  <span className="text-muted-foreground">{t("waitForApproval")}</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    3
-                  </span>
-                  <span className="text-muted-foreground">{t("createAndPost")}</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    4
-                  </span>
-                  <span className="text-muted-foreground">{t("submitProofAfter")}</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    5
-                  </span>
-                  <span className="text-muted-foreground">{t("getPaidFromEscrow")}</span>
-                </li>
-              </ol>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("requirements")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{t("requiredViews")}</span>
+                  <span className="font-semibold">{offer.required_views.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{t("platform")}</span>
+                  <span className="font-semibold capitalize">{offer.platform}</span>
+                </div>
+              </CardContent>
             </Card>
+
+            {!hasApplied ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("applyNow")}</CardTitle>
+                  <CardDescription>{t("tellWhyPerfect")}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="message">{t("message")} ({t("optional")})</Label>
+                    <Textarea
+                      id="message"
+                      placeholder={t("introduceYourself")}
+                      value={applicationMessage}
+                      onChange={(e) => setApplicationMessage(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleApply} 
+                    className="w-full" 
+                    variant="hero"
+                    disabled={applying}
+                  >
+                    {applying ? t("submitting") : t("submitApplication")}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-6 text-center">
+                  <Badge variant="success" className="mb-2">✓ {t("applied")}</Badge>
+                  <p className="text-sm text-muted-foreground">{t("alreadyApplied")}</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

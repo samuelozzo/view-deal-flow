@@ -1,317 +1,256 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
-import { Euro, Eye, Clock, TrendingUp, MessageSquare, Upload } from "lucide-react";
+import { DollarSign, Eye, TrendingUp, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
-// Mock user role - in real app this would come from auth
-const USER_ROLE = "creator"; // or "business"
+interface Application {
+  id: string;
+  status: string;
+  message: string | null;
+  created_at: string;
+  offers: {
+    id: string;
+    title: string;
+    total_reward_cents: number;
+    required_views: number;
+    profiles?: {
+      display_name: string | null;
+    };
+  };
+}
 
 const Dashboard = () => {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState("applications");
-  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const { user } = useAuth();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    accepted: 0,
+    pending: 0,
+    totalEarnings: 0,
+  });
 
-  const handleProofSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitDialogOpen(false);
-    toast.success(t("proofSubmitted") + "!");
-    setActiveTab("submissions");
+  useEffect(() => {
+    if (user) {
+      fetchApplications();
+    }
+  }, [user]);
+
+  const fetchApplications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select(`
+          *,
+          offers (
+            id,
+            title,
+            total_reward_cents,
+            required_views,
+            profiles:business_id (
+              display_name
+            )
+          )
+        `)
+        .eq('creator_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setApplications(data || []);
+
+      // Calculate stats
+      const total = data?.length || 0;
+      const accepted = data?.filter(app => app.status === 'accepted').length || 0;
+      const pending = data?.filter(app => app.status === 'pending').length || 0;
+      
+      setStats({
+        total,
+        accepted,
+        pending,
+        totalEarnings: 0, // Would be calculated from submissions
+      });
+    } catch (error: any) {
+      console.error("Error fetching applications:", error);
+      toast.error("Failed to load applications");
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // Mock data for creator
-  const applications = [
-    {
-      id: 1,
-      offer: "Fitness Brand Product Review",
-      business: "FitLife Pro",
-      status: "accepted",
-      reward: "€150",
-      totalReward: 150,
-      requiredViews: 100000,
-      deadline: "14 days",
-      hasChat: true,
-    },
-    {
-      id: 2,
-      offer: "Tech Gadget Unboxing",
-      business: "TechGear EU",
-      status: "pending",
-      reward: "€200",
-      totalReward: 200,
-      requiredViews: 150000,
-      deadline: "14 days",
-      hasChat: false,
-    },
-    {
-      id: 3,
-      offer: "Fashion Collection Showcase",
-      business: "StyleHub",
-      status: "submitted",
-      reward: "€100",
-      totalReward: 100,
-      requiredViews: 80000,
-      actualViews: 85243,
-      videoUrl: "https://tiktok.com/@user/video/123456",
-      deadline: "In Escrow",
-      hasChat: true,
-    },
-  ];
-
-  const submissions = [
-    {
-      id: 1,
-      offer: "Fashion Collection Showcase",
-      submittedDate: "2 days ago",
-      actualViews: 85243,
-      requiredViews: 80000,
-      totalReward: 100,
-      status: "pending_verification",
-      proofUrl: "https://tiktok.com/@user/video/123456",
-      calculatedEarnings: Math.min((85243 / 80000) * 100, 100), // Capped at 100%
-    },
-  ];
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
       accepted: { variant: "success", label: t("accepted") },
       pending: { variant: "warning", label: t("pendingReview") },
-      submitted: { variant: "accent", label: t("proofSubmitted") },
-      pending_verification: { variant: "warning", label: t("verifying") },
-      completed: { variant: "success", label: t("completed") },
+      rejected: { variant: "destructive", label: t("rejected") },
     };
     const config = variants[status] || { variant: "default", label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Overview */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-6">{t("creatorDashboard")}</h1>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="p-6">
+          <h1 className="text-3xl font-bold mb-2">{t("dashboard")}</h1>
+          <p className="text-muted-foreground">{t("manageApplications")}</p>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{t("activeDeals")}</p>
-                  <p className="text-2xl font-bold">3</p>
+                  <p className="text-sm text-muted-foreground">{t("totalApplications")}</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-primary" />
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
               </div>
-            </Card>
-            <Card className="p-6">
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("accepted")}</p>
+                  <p className="text-2xl font-bold">{stats.accepted}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Eye className="h-6 w-6 text-green-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("pending")}</p>
+                  <p className="text-2xl font-bold">{stats.pending}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                  <MessageSquare className="h-6 w-6 text-yellow-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">{t("totalEarnings")}</p>
-                  <p className="text-2xl font-bold">€450</p>
+                  <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
                 </div>
-                <Euro className="h-8 w-8 text-success" />
-              </div>
-            </Card>
-            <Card className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("pendingPayment")}</p>
-                  <p className="text-2xl font-bold">€100</p>
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-primary" />
                 </div>
-                <Clock className="h-8 w-8 text-warning" />
               </div>
-            </Card>
-            <Card className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("totalViews")}</p>
-                  <p className="text-2xl font-bold">235K</p>
-                </div>
-                <Eye className="h-8 w-8 text-accent" />
-              </div>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="applications">{t("myApplications")}</TabsTrigger>
-            <TabsTrigger value="submissions">In Escrow</TabsTrigger>
-          </TabsList>
-
-          {/* Applications Tab */}
-          <TabsContent value="applications" className="space-y-4 mt-6">
-            {applications.map((app) => (
-              <Card key={app.id} className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-lg">{app.offer}</h3>
-                      {getStatusBadge(app.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">{app.business}</p>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Euro className="h-4 w-4 text-primary" />
-                        <span className="font-semibold">{app.reward}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                        <span>{app.requiredViews.toLocaleString()} {t("views")}</span>
-                      </div>
-                      {app.actualViews && (
-                        <div className="flex items-center gap-1 text-success">
-                          <span className="text-xs">
-                            {app.actualViews.toLocaleString()} {t("actualViews")} ({((app.actualViews / app.requiredViews) * 100).toFixed(1)}%)
-                          </span>
+        {/* Applications List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("myApplications")}</CardTitle>
+            <CardDescription>{t("trackYourApplications")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {applications.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">{t("noApplicationsYet")}</p>
+                <Button asChild>
+                  <Link to="/offers">{t("browseOffers")}</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {applications.map((app) => (
+                  <Card key={app.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">{app.offers.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {t("by")} {app.offers.profiles?.display_name || "Unknown Business"}
+                          </p>
                         </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{app.deadline}</span>
+                        {getStatusBadge(app.status)}
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col gap-2 md:items-end">
-                    {app.status === "accepted" && (
-                      <>
-                        {app.hasChat && (
-                          <Button variant="outline" size="sm" asChild>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">{t("reward")}</p>
+                          <p className="font-semibold">
+                            ${(app.offers.total_reward_cents / 100).toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">{t("requiredViews")}</p>
+                          <p className="font-semibold">
+                            {app.offers.required_views.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">{t("appliedOn")}</p>
+                          <p className="font-semibold">
+                            {new Date(app.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">{t("status")}</p>
+                          <p className="font-semibold capitalize">{app.status}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
+                        </Button>
+                        {app.status === 'accepted' && (
+                          <Button variant="hero" size="sm" asChild>
                             <Link to={`/chat/${app.id}`}>
-                              <MessageSquare className="h-4 w-4 mr-2" />
+                              <MessageSquare className="mr-2 h-4 w-4" />
                               {t("openChat")}
                             </Link>
                           </Button>
                         )}
-                        <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="hero" size="sm">
-                              <Upload className="h-4 w-4 mr-2" />
-                              {t("submitProof")}
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>{t("submitProofTitle")}</DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleProofSubmit} className="space-y-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="proof-url">{t("contentURL")}</Label>
-                                <Input 
-                                  id="proof-url" 
-                                  type="url" 
-                                  placeholder="https://instagram.com/p/..."
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="proof-screenshot">{t("screenshotUpload")}</Label>
-                                <Input 
-                                  id="proof-screenshot" 
-                                  type="file" 
-                                  accept="image/*"
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="view-count">{t("viewCount")}</Label>
-                                <Input 
-                                  id="view-count" 
-                                  type="number" 
-                                  placeholder="85000"
-                                  required
-                                />
-                              </div>
-                              <Button type="submit" className="w-full">{t("submitProof")}</Button>
-                            </form>
-                          </DialogContent>
-                        </Dialog>
-                      </>
-                    )}
-                    {app.status === "pending" && (
-                      <Button variant="ghost" size="sm" disabled>
-                        {t("awaitingReview")}
-                      </Button>
-                    )}
-                    {app.status === "submitted" && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setActiveTab("submissions")}
-                      >
-                        {t("viewSubmission")}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </TabsContent>
-
-          {/* Submissions Tab */}
-          <TabsContent value="submissions" className="space-y-4 mt-6">
-            {submissions.map((submission) => (
-              <Card key={submission.id} className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-lg mb-1">{submission.offer}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {t("submitted")} {submission.submittedDate}
-                      </p>
-                    </div>
-                    {getStatusBadge(submission.status)}
-                  </div>
-
-                  <div className="grid sm:grid-cols-3 gap-4 p-4 bg-secondary/30 rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">{t("viewCount")}</p>
-                      <p className="text-lg font-bold">{submission.actualViews.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("requiredViews")}: {submission.requiredViews.toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">{t("calculatedEarnings")}</p>
-                      <p className="text-lg font-bold text-success">€{submission.calculatedEarnings.toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {Math.min((submission.actualViews / submission.requiredViews) * 100, 100).toFixed(1)}% {t("ofTarget")}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">{t("proofURL")}</p>
-                      <a
-                        href={submission.proofUrl}
-                        className="text-sm text-primary hover:underline break-all"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {t("viewContent")}
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg border border-warning/20">
-                    <Clock className="h-5 w-5 text-warning" />
-                    <p className="text-sm">
-                      In Escrow
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </TabsContent>
-        </Tabs>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
