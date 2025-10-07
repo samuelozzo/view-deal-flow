@@ -14,16 +14,318 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          message: string | null
+          offer_id: string
+          status: Database["public"]["Enums"]["application_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          message?: string | null
+          offer_id: string
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          message?: string | null
+          offer_id?: string
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          application_id: string
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          id?: string
+          message: string
+          sender_id: string
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escrow_transactions: {
+        Row: {
+          amount_cents: number
+          funded_at: string
+          id: string
+          offer_id: string
+          refunded_at: string | null
+          released_at: string | null
+          status: Database["public"]["Enums"]["escrow_status"]
+        }
+        Insert: {
+          amount_cents: number
+          funded_at?: string
+          id?: string
+          offer_id: string
+          refunded_at?: string | null
+          released_at?: string | null
+          status?: Database["public"]["Enums"]["escrow_status"]
+        }
+        Update: {
+          amount_cents?: number
+          funded_at?: string
+          id?: string
+          offer_id?: string
+          refunded_at?: string | null
+          released_at?: string | null
+          status?: Database["public"]["Enums"]["escrow_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_transactions_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          business_id: string
+          category: string
+          claimed_reward_cents: number
+          created_at: string
+          description: string
+          escrow_funded: boolean
+          id: string
+          platform: Database["public"]["Enums"]["platform_type"]
+          required_views: number
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          status: Database["public"]["Enums"]["offer_status"]
+          title: string
+          total_reward_cents: number
+          updated_at: string
+          views_per_product: number | null
+        }
+        Insert: {
+          business_id: string
+          category: string
+          claimed_reward_cents?: number
+          created_at?: string
+          description: string
+          escrow_funded?: boolean
+          id?: string
+          platform: Database["public"]["Enums"]["platform_type"]
+          required_views: number
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          status?: Database["public"]["Enums"]["offer_status"]
+          title: string
+          total_reward_cents: number
+          updated_at?: string
+          views_per_product?: number | null
+        }
+        Update: {
+          business_id?: string
+          category?: string
+          claimed_reward_cents?: number
+          created_at?: string
+          description?: string
+          escrow_funded?: boolean
+          id?: string
+          platform?: Database["public"]["Enums"]["platform_type"]
+          required_views?: number
+          reward_type?: Database["public"]["Enums"]["reward_type"]
+          status?: Database["public"]["Enums"]["offer_status"]
+          title?: string
+          total_reward_cents?: number
+          updated_at?: string
+          views_per_product?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          account_type: Database["public"]["Enums"]["account_type"]
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          platform_links: Json | null
+          updated_at: string
+        }
+        Insert: {
+          account_type: Database["public"]["Enums"]["account_type"]
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          platform_links?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: Database["public"]["Enums"]["account_type"]
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          platform_links?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          actual_views: number
+          application_id: string
+          calculated_earnings_cents: number
+          content_url: string
+          id: string
+          screenshot_url: string | null
+          status: Database["public"]["Enums"]["submission_status"]
+          submitted_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          actual_views: number
+          application_id: string
+          calculated_earnings_cents?: number
+          content_url: string
+          id?: string
+          screenshot_url?: string | null
+          status?: Database["public"]["Enums"]["submission_status"]
+          submitted_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          actual_views?: number
+          application_id?: string
+          calculated_earnings_cents?: number
+          content_url?: string
+          id?: string
+          screenshot_url?: string | null
+          status?: Database["public"]["Enums"]["submission_status"]
+          submitted_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_type: "creator" | "business"
+      app_role: "admin" | "creator" | "business"
+      application_status: "pending" | "accepted" | "rejected"
+      escrow_status: "funded" | "released" | "refunded"
+      offer_status: "draft" | "open" | "completed" | "cancelled"
+      platform_type: "TikTok" | "Instagram" | "YouTube"
+      reward_type: "cash" | "product" | "discount"
+      submission_status: "pending_verification" | "verified" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +452,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_type: ["creator", "business"],
+      app_role: ["admin", "creator", "business"],
+      application_status: ["pending", "accepted", "rejected"],
+      escrow_status: ["funded", "released", "refunded"],
+      offer_status: ["draft", "open", "completed", "cancelled"],
+      platform_type: ["TikTok", "Instagram", "YouTube"],
+      reward_type: ["cash", "product", "discount"],
+      submission_status: ["pending_verification", "verified", "rejected"],
+    },
   },
 } as const
