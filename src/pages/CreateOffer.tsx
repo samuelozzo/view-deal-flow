@@ -24,7 +24,7 @@ const offerSchema = z.object({
   requiredViews: z.number()
     .positive("Required views must be a positive number")
     .max(1000000000, "Required views cannot exceed 1 billion"),
-  platform: z.enum(["tiktok", "instagram", "youtube"]),
+  platform: z.enum(["TikTok", "Instagram", "YouTube"]),
 });
 
 const cashRewardSchema = z.object({
@@ -60,7 +60,7 @@ const CreateOffer = () => {
     discountDetails: "",
     freeGiftDetails: "",
     requiredViews: "",
-    platform: "tiktok",
+    platform: "TikTok",
     totalRewardAmount: ""
   });
 
@@ -73,7 +73,7 @@ const CreateOffer = () => {
         title: formData.title,
         description: formData.description,
         requiredViews: Number(formData.requiredViews),
-        platform: formData.platform as "tiktok" | "instagram" | "youtube",
+        platform: formData.platform as "TikTok" | "Instagram" | "YouTube",
       };
       
       offerSchema.parse(baseData);
@@ -205,9 +205,9 @@ const CreateOffer = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tiktok">{t("tiktok")}</SelectItem>
-                    <SelectItem value="instagram">{t("instagram")}</SelectItem>
-                    <SelectItem value="youtube">{t("youtube")}</SelectItem>
+                    <SelectItem value="TikTok">{t("tiktok")}</SelectItem>
+                    <SelectItem value="Instagram">{t("instagram")}</SelectItem>
+                    <SelectItem value="YouTube">{t("youtube")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
