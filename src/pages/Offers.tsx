@@ -82,6 +82,22 @@ const initialMockOffers = [
     totalRewardCents: 12000, // €120
     claimedRewardCents: 8520, // €85.20 (71% claimed)
   },
+  {
+    id: 5,
+    title: "Gaming Headset Review",
+    business: "AudioGear Pro",
+    reward: "3 Free Products",
+    rewardType: "product",
+    requiredViews: "50,000",
+    targetViews: 50000,
+    platform: "YouTube",
+    timeframe: "14 days",
+    category: "Technology",
+    escrowFunded: true,
+    applications: 9,
+    totalRewardCents: 3, // 3 products total
+    claimedRewardCents: 1, // 1 product claimed
+  },
 ];
 
 const Offers = () => {
@@ -96,16 +112,29 @@ const Offers = () => {
     const interval = setInterval(() => {
       setMockOffers((prevOffers) =>
         prevOffers.map((offer) => {
-          // Simulate small incremental claims (random small increase)
-          const increment = Math.random() * 100; // Random increment up to €1
-          const newClaimed = Math.min(
-            offer.claimedRewardCents + increment,
-            offer.totalRewardCents
-          );
-          return {
-            ...offer,
-            claimedRewardCents: newClaimed,
-          };
+          // Simulate small incremental claims
+          if (offer.rewardType === "product") {
+            // For products, occasionally claim one more product
+            const shouldClaim = Math.random() > 0.7; // 30% chance to claim
+            const newClaimed = shouldClaim 
+              ? Math.min(offer.claimedRewardCents + 1, offer.totalRewardCents)
+              : offer.claimedRewardCents;
+            return {
+              ...offer,
+              claimedRewardCents: newClaimed,
+            };
+          } else {
+            // For cash, small incremental claims (random small increase)
+            const increment = Math.random() * 100; // Random increment up to €1
+            const newClaimed = Math.min(
+              offer.claimedRewardCents + increment,
+              offer.totalRewardCents
+            );
+            return {
+              ...offer,
+              claimedRewardCents: newClaimed,
+            };
+          }
         })
       );
     }, 5000); // Update every 5 seconds
@@ -265,17 +294,32 @@ const Offers = () => {
                     value={(offer.claimedRewardCents / offer.totalRewardCents) * 100} 
                     className="h-2"
                   />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      €{(offer.claimedRewardCents / 100).toFixed(2)} / €{(offer.totalRewardCents / 100).toFixed(2)}
-                    </span>
-                    <span className="font-semibold text-success">
-                      €{((offer.totalRewardCents - offer.claimedRewardCents) / 100).toFixed(2)} left
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
-                    Rate: €{((offer.totalRewardCents / 100) / (offer.targetViews / 1000)).toFixed(2)} per 1,000 views
-                  </div>
+                  {offer.rewardType === "product" ? (
+                    <>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          {offer.claimedRewardCents} / {offer.totalRewardCents} products claimed
+                        </span>
+                        <span className="font-semibold text-success">
+                          {offer.totalRewardCents - offer.claimedRewardCents} left
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          €{(offer.claimedRewardCents / 100).toFixed(2)} / €{(offer.totalRewardCents / 100).toFixed(2)}
+                        </span>
+                        <span className="font-semibold text-success">
+                          €{((offer.totalRewardCents - offer.claimedRewardCents) / 100).toFixed(2)} left
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
+                        Rate: €{((offer.totalRewardCents / 100) / (offer.targetViews / 1000)).toFixed(2)} per 1,000 views
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Details */}
