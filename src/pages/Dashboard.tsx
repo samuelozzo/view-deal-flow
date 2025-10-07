@@ -4,8 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
-import { DollarSign, Eye, TrendingUp, MessageSquare } from "lucide-react";
+import { DollarSign, Eye, TrendingUp, MessageSquare, Upload, Video } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +19,7 @@ interface Application {
   status: string;
   message: string | null;
   created_at: string;
+  creator_id?: string;
   offers: {
     id: string;
     title: string;
@@ -25,6 +29,15 @@ interface Application {
       display_name: string | null;
     };
   };
+  profiles?: {
+    display_name: string | null;
+  };
+  submissions?: Array<{
+    id: string;
+    content_url: string;
+    status: string;
+    actual_views: number;
+  }>;
 }
 
 const Dashboard = () => {
@@ -32,6 +45,12 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accountType, setAccountType] = useState<string | null>(null);
+  const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoViews, setVideoViews] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     accepted: 0,
@@ -41,28 +60,81 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) {
+      fetchAccountType();
       fetchApplications();
     }
   }, [user]);
 
+  const fetchAccountType = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', user?.id)
+        .single();
+      
+      setAccountType(data?.account_type || null);
+    } catch (error) {
+      console.error("Error fetching account type:", error);
+    }
+  };
+
   const fetchApplications = async () => {
     try {
-      const { data, error } = await supabase
-        .from('applications')
-        .select(`
-          *,
-          offers (
-            id,
-            title,
-            total_reward_cents,
-            required_views,
-            profiles:business_id (
+      let query;
+      
+      if (accountType === 'business') {
+        // Business users see applications to their offers
+        query = supabase
+          .from('applications')
+          .select(`
+            *,
+            profiles:creator_id (
               display_name
+            ),
+            offers!inner (
+              id,
+              title,
+              total_reward_cents,
+              required_views,
+              business_id
+            ),
+            submissions (
+              id,
+              content_url,
+              status,
+              actual_views
             )
-          )
-        `)
-        .eq('creator_id', user?.id)
-        .order('created_at', { ascending: false });
+          `)
+          .eq('offers.business_id', user?.id)
+          .order('created_at', { ascending: false });
+      } else {
+        // Creator users see their own applications
+        query = supabase
+          .from('applications')
+          .select(`
+            *,
+            offers (
+              id,
+              title,
+              total_reward_cents,
+              required_views,
+              profiles:business_id (
+                display_name
+              )
+            ),
+            submissions (
+              id,
+              content_url,
+              status,
+              actual_views
+            )
+          `)
+          .eq('creator_id', user?.id)
+          .order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -77,13 +149,47 @@ const Dashboard = () => {
         total,
         accepted,
         pending,
-        totalEarnings: 0, // Would be calculated from submissions
+        totalEarnings: 0,
       });
     } catch (error: any) {
       console.error("Error fetching applications:", error);
       toast.error("Failed to load applications");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitVideo = async () => {
+    if (!selectedApplication || !videoUrl) {
+      toast.error("Please provide a video URL");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('submissions')
+        .insert({
+          application_id: selectedApplication,
+          content_url: videoUrl,
+          actual_views: parseInt(videoViews) || 0,
+          status: 'pending_verification',
+        });
+
+      if (error) throw error;
+
+      toast.success("Video submitted successfully!");
+      setSubmissionDialogOpen(false);
+      setVideoUrl("");
+      setVideoViews("");
+      setSelectedApplication(null);
+      fetchApplications();
+    } catch (error: any) {
+      console.error("Error submitting video:", error);
+      toast.error(error.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -180,8 +286,15 @@ const Dashboard = () => {
         {/* Applications List */}
         <Card>
           <CardHeader>
-            <CardTitle>{t("myApplications")}</CardTitle>
-            <CardDescription>{t("trackYourApplications")}</CardDescription>
+            <CardTitle>
+              {accountType === 'business' ? 'Received Applications' : t("myApplications")}
+            </CardTitle>
+            <CardDescription>
+              {accountType === 'business' 
+                ? 'Manage applications from creators'
+                : t("trackYourApplications")
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {applications.length === 0 ? (
@@ -197,10 +310,13 @@ const Dashboard = () => {
                   <Card key={app.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
+                       <div className="flex-1">
                           <h3 className="font-semibold text-lg mb-1">{app.offers.title}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {t("by")} {app.offers.profiles?.display_name || "Unknown Business"}
+                            {accountType === 'business' 
+                              ? `Creator: ${app.profiles?.display_name || "Unknown Creator"}`
+                              : `${t("by")} ${app.offers.profiles?.display_name || "Unknown Business"}`
+                            }
                           </p>
                         </div>
                         {getStatusBadge(app.status)}
@@ -231,10 +347,69 @@ const Dashboard = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" asChild>
                           <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
                         </Button>
+                        
+                        {accountType === 'creator' && !app.submissions?.length && (
+                          <Dialog open={submissionDialogOpen && selectedApplication === app.id} 
+                                  onOpenChange={(open) => {
+                                    setSubmissionDialogOpen(open);
+                                    if (open) setSelectedApplication(app.id);
+                                  }}>
+                            <DialogTrigger asChild>
+                              <Button variant="hero" size="sm">
+                                <Video className="mr-2 h-4 w-4" />
+                                Submit Video
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Submit Your Video</DialogTitle>
+                                <DialogDescription>
+                                  Add the link to your content for verification
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <Label htmlFor="videoUrl">Video URL *</Label>
+                                  <Input
+                                    id="videoUrl"
+                                    placeholder="https://tiktok.com/@user/video/123..."
+                                    value={videoUrl}
+                                    onChange={(e) => setVideoUrl(e.target.value)}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="videoViews">Current Views</Label>
+                                  <Input
+                                    id="videoViews"
+                                    type="number"
+                                    placeholder="0"
+                                    value={videoViews}
+                                    onChange={(e) => setVideoViews(e.target.value)}
+                                  />
+                                </div>
+                                <Button 
+                                  onClick={handleSubmitVideo} 
+                                  className="w-full"
+                                  disabled={submitting || !videoUrl}
+                                >
+                                  {submitting ? "Submitting..." : "Submit Video"}
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+
+                        {accountType === 'creator' && app.submissions && app.submissions.length > 0 && (
+                          <Badge variant="default" className="flex items-center gap-1">
+                            <Video className="h-3 w-3" />
+                            Video Submitted
+                          </Badge>
+                        )}
+                        
                         {app.status === 'accepted' && (
                           <Button variant="hero" size="sm" asChild>
                             <Link to={`/chat/${app.id}`}>
