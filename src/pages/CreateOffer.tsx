@@ -30,7 +30,7 @@ const offerSchema = z.object({
 const cashRewardSchema = z.object({
   totalRewardAmount: z.number()
     .positive("Total reward amount must be positive")
-    .max(1000000, "Total reward amount cannot exceed $1,000,000"),
+    .max(1000000, "Total reward amount cannot exceed €1,000,000"),
 });
 
 const discountSchema = z.object({

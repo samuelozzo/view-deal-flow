@@ -283,7 +283,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">{t("totalEarnings")}</p>
-                  <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
+                  <p className="text-2xl font-bold">€{stats.totalEarnings.toFixed(2)}</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <DollarSign className="h-6 w-6 text-primary" />
@@ -336,7 +336,7 @@ const Dashboard = () => {
                         <div>
                           <p className="text-xs text-muted-foreground">{t("reward")}</p>
                           <p className="font-semibold">
-                            ${(app.offers.total_reward_cents / 100).toFixed(2)}
+                            €{(app.offers.total_reward_cents / 100).toFixed(2)}
                           </p>
                         </div>
                         <div>

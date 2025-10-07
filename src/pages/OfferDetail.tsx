@@ -286,7 +286,7 @@ const OfferDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">{t("totalReward")}</p>
                   <p className="text-3xl font-bold text-primary">
-                    ${(offer.total_reward_cents / 100).toFixed(2)}
+                    €{(offer.total_reward_cents / 100).toFixed(2)}
                   </p>
                 </div>
 
@@ -295,7 +295,7 @@ const OfferDetail = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{t("claimed")}</span>
                       <span className="font-semibold">
-                        ${(offer.claimed_reward_cents / 100).toFixed(2)}
+                        €{(offer.claimed_reward_cents / 100).toFixed(2)}
                       </span>
                     </div>
                     <Progress value={progressPercentage} className="h-2" />

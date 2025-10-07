@@ -147,9 +147,9 @@ const Offers = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("allRewards")}</SelectItem>
-                  <SelectItem value="low">&lt; $100</SelectItem>
-                  <SelectItem value="medium">$100 - $500</SelectItem>
-                  <SelectItem value="high">&gt; $500</SelectItem>
+                  <SelectItem value="low">&lt; €100</SelectItem>
+                  <SelectItem value="medium">€100 - €500</SelectItem>
+                  <SelectItem value="high">&gt; €500</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -190,15 +190,15 @@ const Offers = () => {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{t("totalReward")}:</span>
                         <span className="font-bold text-lg text-primary">
-                          ${(offer.total_reward_cents / 100).toFixed(2)}
+                          €{(offer.total_reward_cents / 100).toFixed(2)}
                         </span>
                       </div>
                       
                       {offer.reward_type === "cash" && (
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>{t("claimed")}: ${(offer.claimed_reward_cents / 100).toFixed(2)}</span>
-                            <span>{t("remaining")}: ${remainingReward.toFixed(2)}</span>
+                            <span>{t("claimed")}: €{(offer.claimed_reward_cents / 100).toFixed(2)}</span>
+                            <span>{t("remaining")}: €{remainingReward.toFixed(2)}</span>
                           </div>
                           <Progress value={progressPercentage} className="h-2" />
                         </div>
