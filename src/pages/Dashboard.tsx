@@ -378,7 +378,7 @@ const Dashboard = () => {
                           <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
                         </Button>
                         
-                        {accountType === 'creator' && !app.submissions?.length && (
+                        {accountType === 'creator' && app.status === 'accepted' && !app.submissions?.length && (
                           <Dialog open={submissionDialogOpen && selectedApplication === app.id} 
                                   onOpenChange={(open) => {
                                     setSubmissionDialogOpen(open);
@@ -420,9 +420,9 @@ const Dashboard = () => {
                         )}
 
                         {accountType === 'creator' && app.submissions && app.submissions.length > 0 && (
-                          <Badge variant="default" className="flex items-center gap-1">
-                            <Video className="h-3 w-3" />
-                            Video Submitted
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Upload className="h-3 w-3" />
+                            Video Inviato
                           </Badge>
                         )}
                         

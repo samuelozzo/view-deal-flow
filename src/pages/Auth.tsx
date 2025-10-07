@@ -22,6 +22,8 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<"business" | "creator">("creator");
   const [displayName, setDisplayName] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -134,6 +136,36 @@ const Auth = () => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(resetEmail);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+
+    setIsLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/account-settings`,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Email di reset password inviata! Controlla la tua casella di posta.");
+    setShowResetPassword(false);
+    setResetEmail("");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -152,30 +184,73 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">{t("email")}</Label>
-                  <Input 
-                    id="login-email"
-                    name="email"
-                    type="email" 
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">{t("password")}</Label>
-                  <Input 
-                    id="login-password"
-                    name="password"
-                    type="password"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? t("loggingIn") : t("signIn")}
-                </Button>
-              </form>
+              {!showResetPassword ? (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">{t("email")}</Label>
+                    <Input 
+                      id="login-email"
+                      name="email"
+                      type="email" 
+                      placeholder="you@example.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">{t("password")}</Label>
+                    <Input 
+                      id="login-password"
+                      name="password"
+                      type="password"
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? t("loggingIn") : t("signIn")}
+                  </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Hai dimenticato la password?
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input 
+                      id="reset-email"
+                      type="email" 
+                      placeholder="you@example.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ti invieremo un'email per reimpostare la password
+                    </p>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Invio in corso..." : "Invia Email di Reset"}
+                  </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowResetPassword(false);
+                        setResetEmail("");
+                      }}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Torna al login
+                    </button>
+                  </div>
+                </form>
+              )}
             </TabsContent>
 
             <TabsContent value="signup">

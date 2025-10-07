@@ -9,8 +9,9 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, KeyRound } from "lucide-react";
+import { Loader2, KeyRound, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { z } from "zod";
 
 const AccountSettings = () => {
@@ -25,6 +26,9 @@ const AccountSettings = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -129,6 +133,34 @@ const AccountSettings = () => {
       toast.error(error.message || "Errore nella modifica della password");
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (confirmEmail !== user?.email) {
+      toast.error("L'email non corrisponde");
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      // Delete user account using admin function
+      const { error } = await supabase.rpc('delete_user_account');
+      
+      if (error) throw error;
+
+      toast.success("Account eliminato con successo");
+      
+      // Sign out and redirect
+      await supabase.auth.signOut();
+      navigate("/");
+    } catch (error: any) {
+      console.error("Error deleting account:", error);
+      toast.error(error.message || "Errore nell'eliminazione dell'account");
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -316,6 +348,83 @@ const AccountSettings = () => {
                 )}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6 border-destructive">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              <CardTitle className="text-destructive">Zona Pericolosa</CardTitle>
+            </div>
+            <CardDescription>
+              Elimina permanentemente il tuo account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Una volta eliminato l'account, tutti i tuoi dati verranno cancellati permanentemente. 
+              Questa azione non può essere annullata.
+            </p>
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" className="w-full">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Elimina Account
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Sei sicuro?</DialogTitle>
+                  <DialogDescription>
+                    Questa azione è permanente e non può essere annullata. Tutti i tuoi dati verranno eliminati.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-email">
+                      Conferma inserendo la tua email: <strong>{user?.email}</strong>
+                    </Label>
+                    <Input
+                      id="confirm-email"
+                      type="email"
+                      value={confirmEmail}
+                      onChange={(e) => setConfirmEmail(e.target.value)}
+                      placeholder="Inserisci la tua email"
+                      disabled={deleting}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setDeleteDialogOpen(false);
+                        setConfirmEmail("");
+                      }}
+                      disabled={deleting}
+                      className="flex-1"
+                    >
+                      Annulla
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteAccount}
+                      disabled={deleting || confirmEmail !== user?.email}
+                      className="flex-1"
+                    >
+                      {deleting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Eliminazione...
+                        </>
+                      ) : (
+                        "Elimina Definitivamente"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>
