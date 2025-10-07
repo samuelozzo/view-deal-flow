@@ -293,7 +293,7 @@ const Wallet = () => {
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Riservato</CardTitle>
+                  <CardTitle className="text-lg">In Escrow</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-muted-foreground">
