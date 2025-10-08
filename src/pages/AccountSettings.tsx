@@ -149,6 +149,15 @@ const AccountSettings = () => {
     }
   };
 
+  const handleInstagramConnect = () => {
+    const clientId = import.meta.env.VITE_INSTAGRAM_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/instagram/callback`;
+    const scope = 'instagram_basic,instagram_manage_insights';
+    
+    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+    window.location.href = authUrl;
+  };
+
   const handleDeleteAccount = async () => {
     if (confirmEmail !== user?.email) {
       toast.error("L'email non corrisponde");
