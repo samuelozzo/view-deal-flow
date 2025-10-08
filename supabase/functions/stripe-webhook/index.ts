@@ -46,23 +46,75 @@ Deno.serve(async (req) => {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
-        console.log(`Payment succeeded: ${paymentIntent.id}`);
+        const paymentIntentId = paymentIntent.id;
+        const amountCents = paymentIntent.amount;
+        const metadata = paymentIntent.metadata || {};
+        
+        console.log(`[WEBHOOK] Payment succeeded: ${paymentIntentId}, amount: ${amountCents}, metadata:`, metadata);
+
+        // Check if this is a wallet topup
+        if (metadata.type !== 'wallet_topup') {
+          console.log(`[WEBHOOK] Skipping payment ${paymentIntentId} - not a wallet topup (type: ${metadata.type})`);
+          break;
+        }
 
         // Find the topup intent
         const { data: topupIntent, error: findError } = await supabase
           .from('topup_intents')
           .select('*')
-          .eq('reference', paymentIntent.id)
+          .eq('reference', paymentIntentId)
           .single();
 
         if (findError || !topupIntent) {
-          console.error('Topup intent not found for payment:', paymentIntent.id);
+          console.error(`[WEBHOOK] Topup intent not found for payment: ${paymentIntentId}`, findError);
           break;
         }
 
+        const walletId = topupIntent.wallet_id;
+        const userId = topupIntent.metadata?.user_id;
+
+        console.log(`[WEBHOOK] Processing topup for wallet: ${walletId}, user: ${userId}, amount: ${amountCents}`);
+
         // Idempotency check: skip if already processed
         if (topupIntent.status === 'completed') {
-          console.log(`Payment already processed: ${paymentIntent.id}`);
+          console.log(`[WEBHOOK] Payment already processed: ${paymentIntentId}`);
+          break;
+        }
+
+        // Get wallet data
+        const { data: wallet, error: walletError } = await supabase
+          .from('wallets')
+          .select('available_cents, user_id')
+          .eq('id', walletId)
+          .single();
+
+        if (walletError || !wallet) {
+          console.error(`[WEBHOOK] Wallet not found: ${walletId}`, walletError);
+          throw new Error('Wallet not found');
+        }
+
+        const walletUserId = wallet.user_id;
+
+        // Idempotent transaction insert using payment_intent_id as unique constraint
+        const { data: existingTx } = await supabase
+          .from('wallet_transactions')
+          .select('id')
+          .eq('metadata->stripe_payment_intent', paymentIntentId)
+          .single();
+
+        if (existingTx) {
+          console.log(`[WEBHOOK] Transaction already exists for payment: ${paymentIntentId}`);
+          
+          // Still mark topup intent as completed if not already
+          if (topupIntent.status !== 'completed') {
+            await supabase
+              .from('topup_intents')
+              .update({
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+              })
+              .eq('id', topupIntent.id);
+          }
           break;
         }
 
@@ -76,40 +128,32 @@ Deno.serve(async (req) => {
           .eq('id', topupIntent.id);
 
         if (updateTopupError) {
-          console.error('Error updating topup intent:', updateTopupError);
+          console.error(`[WEBHOOK] Error updating topup intent: ${topupIntent.id}`, updateTopupError);
           throw updateTopupError;
         }
 
-        // Update wallet balance
-        const { data: wallet, error: walletError } = await supabase
-          .from('wallets')
-          .select('available_cents')
-          .eq('id', topupIntent.wallet_id)
-          .single();
-
-        if (walletError || !wallet) {
-          console.error('Wallet not found:', topupIntent.wallet_id);
-          throw new Error('Wallet not found');
-        }
-
+        // Update wallet balance atomically
+        const newBalance = wallet.available_cents + topupIntent.amount_cents;
         const { error: updateWalletError } = await supabase
           .from('wallets')
           .update({
-            available_cents: wallet.available_cents + topupIntent.amount_cents,
+            available_cents: newBalance,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', topupIntent.wallet_id);
+          .eq('id', walletId);
 
         if (updateWalletError) {
-          console.error('Error updating wallet:', updateWalletError);
+          console.error(`[WEBHOOK] Error updating wallet balance for wallet: ${walletId}`, updateWalletError);
           throw updateWalletError;
         }
 
-        // Create transaction record
+        console.log(`[WEBHOOK] Wallet ${walletId} balance updated: ${wallet.available_cents} -> ${newBalance}`);
+
+        // Create transaction record (idempotent)
         const { error: txError } = await supabase
           .from('wallet_transactions')
           .insert({
-            wallet_id: topupIntent.wallet_id,
+            wallet_id: walletId,
             type: 'topup',
             direction: 'in',
             amount_cents: topupIntent.amount_cents,
@@ -117,34 +161,27 @@ Deno.serve(async (req) => {
             reference_type: 'topup_intent',
             reference_id: topupIntent.id,
             metadata: {
-              stripe_payment_intent: paymentIntent.id,
+              stripe_payment_intent: paymentIntentId,
               method: 'stripe',
             },
           });
 
         if (txError) {
-          console.error('Error creating transaction:', txError);
+          console.error(`[WEBHOOK] Error creating transaction for wallet: ${walletId}`, txError);
+        } else {
+          console.log(`[WEBHOOK] Transaction created for wallet: ${walletId}, amount: ${topupIntent.amount_cents}`);
         }
 
-        // Get user_id from wallet to create notification
-        const { data: walletUser, error: walletUserError } = await supabase
-          .from('wallets')
-          .select('user_id')
-          .eq('id', topupIntent.wallet_id)
-          .single();
+        // Create notification
+        await supabase.from('notifications').insert({
+          user_id: walletUserId,
+          type: 'topup_completed',
+          title: 'Ricarica Completata',
+          message: `La tua ricarica di €${(topupIntent.amount_cents / 100).toFixed(2)} è stata completata con successo.`,
+          link: '/wallet',
+        });
 
-        if (!walletUserError && walletUser) {
-          // Create notification
-          await supabase.from('notifications').insert({
-            user_id: walletUser.user_id,
-            type: 'topup_completed',
-            title: 'Ricarica Completata',
-            message: `La tua ricarica di €${(topupIntent.amount_cents / 100).toFixed(2)} è stata completata con successo.`,
-            link: '/wallet',
-          });
-        }
-
-        console.log(`Topup completed successfully: ${topupIntent.id}`);
+        console.log(`[WEBHOOK] Topup completed successfully for payment: ${paymentIntentId}, wallet: ${walletId}, user: ${walletUserId}`);
         break;
       }
 

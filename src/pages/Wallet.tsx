@@ -62,7 +62,41 @@ const Wallet = () => {
       return;
     }
     fetchWalletData();
-  }, [user]);
+
+    // Set up realtime subscription for wallet updates
+    const channel = supabase
+      .channel('wallet-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'wallets',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Wallet updated:', payload);
+          // Update wallet state with new data
+          if (payload.new) {
+            setWallet((prev) => prev ? {
+              ...prev,
+              available_cents: payload.new.available_cents,
+              reserved_cents: payload.new.reserved_cents,
+            } : null);
+            
+            toast({
+              title: "Saldo Aggiornato",
+              description: "Il saldo del tuo wallet è stato aggiornato",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, navigate]);
 
   const fetchWalletData = async () => {
     try {
@@ -267,13 +301,10 @@ const Wallet = () => {
   };
 
   const handlePaymentSuccess = () => {
-    toast({
-      title: "Pagamento Completato",
-      description: "La ricarica è stata completata con successo",
-    });
     setTopupOpen(false);
     setTopupAmount("");
     setClientSecret(null);
+    // Refetch wallet data to update balance
     fetchWalletData();
   };
 

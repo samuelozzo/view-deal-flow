@@ -25,23 +25,23 @@ export const StripePaymentForm = ({ onSuccess, onCancel }: StripePaymentFormProp
     setIsProcessing(true);
 
     try {
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/wallet?payment=success`,
-        },
+        redirect: 'if_required',
       });
 
       if (error) {
+        console.error("Payment error:", error);
         toast({
           title: "Pagamento Fallito",
           description: error.message || "Si è verificato un errore durante il pagamento",
           variant: "destructive",
         });
-      } else {
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        console.log("Payment succeeded:", paymentIntent.id);
         toast({
           title: "Pagamento Completato",
-          description: "Il pagamento è stato elaborato con successo",
+          description: "La ricarica è stata completata con successo. Il saldo verrà aggiornato a breve.",
         });
         onSuccess();
       }
