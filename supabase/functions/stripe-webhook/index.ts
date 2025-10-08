@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
           break;
         }
 
-        console.log('Processing wallet topup:', { piId, metadata });
+        console.log('🔄 Processing wallet topup:', { piId, metadata });
 
         // Step 1: Find topup_intent with priority order
         let topupIntent = null;
@@ -71,11 +71,11 @@ Deno.serve(async (req) => {
             .maybeSingle();
           if (data) {
             topupIntent = data;
-            console.log('Found by metadata.topupId:', topupIntent.id);
+            console.log('✓ Found by metadata.topupId:', topupIntent.id);
           }
         }
         
-        // Priority 2-4: Try reference field variations
+        // Priority 2: reference (stripe_payment_intent_id)
         if (!topupIntent) {
           const { data } = await supabase
             .from('topup_intents')
@@ -84,14 +84,14 @@ Deno.serve(async (req) => {
             .maybeSingle();
           if (data) {
             topupIntent = data;
-            console.log('Found by reference:', topupIntent.id);
+            console.log('✓ Found by reference (stripe_payment_intent_id):', topupIntent.id);
           }
         }
 
         if (!topupIntent) {
           console.error('❌ topup not updated', { piId, reason: 'row_not_found' });
           return new Response(
-            JSON.stringify({ error: 'Topup intent not found' }),
+            JSON.stringify({ error: 'Topup intent not found', piId }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -100,7 +100,9 @@ Deno.serve(async (req) => {
         const walletId = topupIntent.wallet_id;
         const amountCents = topupIntent.amount_cents;
 
-        // Step 2: Atomic transaction - Update topup_intent
+        console.log('📊 Topup details:', { topupId, walletId, amountCents });
+
+        // Step 2: Atomic transaction - Update topup_intent (with coalesce for completed_at)
         const { data: updatedRows, error: updateError } = await supabase
           .from('topup_intents')
           .update({
@@ -112,19 +114,36 @@ Deno.serve(async (req) => {
           .select();
 
         if (updateError) {
-          console.error('❌ topup not updated', { piId, reason: 'tx_error', error: updateError });
+          console.error('❌ topup not updated', { piId, topupId, reason: 'update_error', error: updateError });
           return new Response(
-            JSON.stringify({ error: 'Failed to update topup_intent' }),
+            JSON.stringify({ error: 'Failed to update topup_intent', details: updateError.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
         if (!updatedRows || updatedRows.length === 0) {
-          console.log('⚠️ Topup already processed (idempotent):', piId);
+          console.log('⚠️ Topup already processed (idempotent):', { piId, topupId });
           break;
         }
 
-        // Step 3: Insert transaction (idempotent via unique index)
+        console.log('✓ Topup intent updated to completed');
+
+        // Step 3: Get wallet user_id for transaction
+        const { data: walletData, error: walletFetchError } = await supabase
+          .from('wallets')
+          .select('user_id, available_cents')
+          .eq('id', walletId)
+          .single();
+
+        if (walletFetchError || !walletData) {
+          console.error('❌ topup not updated', { piId, topupId, reason: 'wallet_fetch_failed', error: walletFetchError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch wallet', details: walletFetchError?.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Step 4: Insert transaction (idempotent via unique index on payment_intent_id)
         const { error: txError } = await supabase
           .from('wallet_transactions')
           .insert({
@@ -135,36 +154,30 @@ Deno.serve(async (req) => {
             status: 'completed',
             reference_type: 'topup_intent',
             reference_id: topupId,
+            payment_intent_id: piId,
             metadata: {
               stripe_payment_intent: piId,
               method: 'stripe',
+              webhook_processed: true,
             },
           });
 
-        if (txError && txError.code !== '23505') { // Ignore duplicate key errors
-          console.error('❌ topup not updated', { piId, reason: 'tx_error', error: txError });
+        if (txError && txError.code !== '23505') { // Ignore duplicate key errors (23505 = unique violation)
+          console.error('❌ topup not updated', { piId, topupId, reason: 'tx_insert_error', error: txError });
           return new Response(
-            JSON.stringify({ error: 'Failed to create transaction' }),
+            JSON.stringify({ error: 'Failed to create transaction', details: txError.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Step 4: Update wallet balance - fetch current balance first for atomic update
-        const { data: currentWallet, error: fetchError } = await supabase
-          .from('wallets')
-          .select('available_cents')
-          .eq('id', walletId)
-          .single();
-
-        if (fetchError || !currentWallet) {
-          console.error('❌ topup not updated', { piId, reason: 'wallet_fetch_failed', error: fetchError });
-          return new Response(
-            JSON.stringify({ error: 'Failed to fetch wallet' }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        if (txError?.code === '23505') {
+          console.log('⚠️ Transaction already exists (idempotent):', { piId, topupId });
+        } else {
+          console.log('✓ Transaction created');
         }
 
-        const newBalance = currentWallet.available_cents + amountCents;
+        // Step 5: Update wallet balance atomically
+        const newBalance = walletData.available_cents + amountCents;
         const { data: updatedWallet, error: walletError } = await supabase
           .from('wallets')
           .update({
@@ -175,14 +188,16 @@ Deno.serve(async (req) => {
           .select();
 
         if (walletError || !updatedWallet || updatedWallet.length === 0) {
-          console.error('❌ topup not updated', { piId, reason: 'wallet_update_failed', error: walletError });
+          console.error('❌ topup not updated', { piId, topupId, reason: 'wallet_update_failed', error: walletError });
           return new Response(
-            JSON.stringify({ error: 'Failed to update wallet balance' }),
+            JSON.stringify({ error: 'Failed to update wallet balance', details: walletError?.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Step 5: Success logging
+        console.log('✓ Wallet balance updated:', { oldBalance: walletData.available_cents, newBalance, increase: amountCents });
+
+        // Step 6: Success logging
         console.log('✅ topup completed', { piId, topupId, walletId, amount_cents: amountCents });
 
         // Create notification (non-critical)

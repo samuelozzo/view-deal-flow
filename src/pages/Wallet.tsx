@@ -56,6 +56,7 @@ const Wallet = () => {
   const [topupMethod, setTopupMethod] = useState<"card" | "bank_transfer">("card");
   const [topupProcessing, setTopupProcessing] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [reconcileProcessing, setReconcileProcessing] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -313,6 +314,40 @@ const Wallet = () => {
     setClientSecret(null);
   };
 
+  const handleReconcileNow = async () => {
+    setReconcileProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reconcile-pending-topups-now");
+
+      if (error) throw error;
+
+      const report = data.report || [];
+      const completed = report.filter((r: any) => r.action === 'completed_and_credited').length;
+
+      if (completed > 0) {
+        toast({
+          title: "Saldo Aggiornato",
+          description: `${completed} ricarica${completed > 1 ? 'he' : ''} completata${completed > 1 ? 'e' : ''} con successo!`,
+        });
+        await fetchWalletData();
+      } else {
+        toast({
+          title: "Nessuna ricarica da processare",
+          description: "Tutte le ricariche recenti sono già state elaborate.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error reconciling topups:", error);
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile aggiornare il saldo.",
+        variant: "destructive",
+      });
+    } finally {
+      setReconcileProcessing(false);
+    }
+  };
+
   const getTransactionIcon = (type: string, direction: string) => {
     if (direction === "in") {
       return <ArrowDownCircle className="h-4 w-4 text-green-500" />;
@@ -395,7 +430,18 @@ const Wallet = () => {
               </Card>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {userRole === "business" && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleReconcileNow}
+                  disabled={reconcileProcessing}
+                >
+                  {reconcileProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Aggiorna saldo ora
+                </Button>
+              )}
+              
               {userRole === "creator" && (
                 <Dialog open={payoutOpen} onOpenChange={setPayoutOpen}>
                   <DialogTrigger asChild>

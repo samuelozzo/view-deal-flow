@@ -461,6 +461,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["wallet_transaction_direction"]
           id: string
           metadata: Json | null
+          payment_intent_id: string | null
           reference_id: string | null
           reference_type: string | null
           status: Database["public"]["Enums"]["wallet_transaction_status"]
@@ -473,6 +474,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["wallet_transaction_direction"]
           id?: string
           metadata?: Json | null
+          payment_intent_id?: string | null
           reference_id?: string | null
           reference_type?: string | null
           status?: Database["public"]["Enums"]["wallet_transaction_status"]
@@ -485,6 +487,7 @@ export type Database = {
           direction?: Database["public"]["Enums"]["wallet_transaction_direction"]
           id?: string
           metadata?: Json | null
+          payment_intent_id?: string | null
           reference_id?: string | null
           reference_type?: string | null
           status?: Database["public"]["Enums"]["wallet_transaction_status"]
