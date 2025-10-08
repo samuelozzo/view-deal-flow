@@ -96,9 +96,9 @@ const CreateOffer = () => {
         });
       }
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         toast({
           title: "Error",
           description: "You must be logged in to create an offer",
@@ -107,51 +107,33 @@ const CreateOffer = () => {
         return;
       }
 
-      // Validate business has sufficient funds for cash rewards
-      if (rewardType === "cash" && totalRewardCents > 0) {
-        const { data: wallet, error: walletError } = await supabase
-          .from('wallets')
-          .select('available_cents')
-          .eq('user_id', user.id)
-          .single();
-
-        if (walletError || !wallet) {
-          toast({
-            title: "Errore",
-            description: "Impossibile verificare il saldo del wallet",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (wallet.available_cents < totalRewardCents) {
-          toast({
-            title: "Fondi Insufficienti",
-            description: `Il tuo saldo disponibile (€${(wallet.available_cents / 100).toFixed(2)}) non è sufficiente per questa offerta (€${(totalRewardCents / 100).toFixed(2)}). Ricarica il tuo wallet prima di procedere.`,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      // Create offer in database
-      const { error } = await supabase.from('offers').insert({
-        business_id: user.id,
-        title: formData.title,
-        description: formData.description,
-        platform: formData.platform as any,
-        reward_type: rewardType as any,
-        total_reward_cents: totalRewardCents,
-        required_views: Number(formData.requiredViews),
-        category: "Product Review",
-        status: "open" as any,
+      // Call edge function to create offer with escrow
+      const { data, error } = await supabase.functions.invoke('create-offer-with-escrow', {
+        body: {
+          title: formData.title,
+          description: formData.description,
+          platform: formData.platform,
+          reward_type: rewardType,
+          total_reward_cents: totalRewardCents,
+          required_views: Number(formData.requiredViews),
+          category: "Product Review",
+        },
       });
 
       if (error) {
         console.error("Error creating offer:", error);
         toast({
-          title: "Error",
-          description: error.message,
+          title: "Errore",
+          description: error.message || "Impossibile creare l'offerta",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data?.success) {
+        toast({
+          title: "Errore",
+          description: data?.error || "Impossibile creare l'offerta",
           variant: "destructive",
         });
         return;
@@ -159,7 +141,9 @@ const CreateOffer = () => {
       
       toast({
         title: t("offerCreated"),
-        description: t("offerPostedSuccess"),
+        description: data.escrow_funded 
+          ? "Offerta pubblicata e fondi depositati in escrow" 
+          : t("offerPostedSuccess"),
       });
       
       navigate("/offers");
