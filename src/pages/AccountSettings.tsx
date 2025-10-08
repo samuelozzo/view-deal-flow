@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, KeyRound, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Instagram } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { z } from "zod";
 
@@ -22,6 +23,8 @@ const AccountSettings = () => {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [accountType, setAccountType] = useState<string>("");
+  const [instagramAccessToken, setInstagramAccessToken] = useState("");
+  const [instagramUserId, setInstagramUserId] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -40,7 +43,7 @@ const AccountSettings = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('display_name, bio, account_type')
+        .select('display_name, bio, account_type, instagram_access_token, instagram_user_id')
         .eq('id', user?.id)
         .single();
 
@@ -49,6 +52,8 @@ const AccountSettings = () => {
       setDisplayName(data?.display_name || "");
       setBio(data?.bio || "");
       setAccountType(data?.account_type || "");
+      setInstagramAccessToken(data?.instagram_access_token || "");
+      setInstagramUserId(data?.instagram_user_id || "");
     } catch (error) {
       console.error("Error loading profile:", error);
       toast.error("Errore nel caricamento del profilo");
@@ -62,12 +67,20 @@ const AccountSettings = () => {
     setSaving(true);
 
     try {
+      const updateData: any = {
+        display_name: displayName.trim(),
+        bio: bio.trim(),
+      };
+
+      // Only update Instagram fields for creator accounts
+      if (accountType === "creator") {
+        updateData.instagram_access_token = instagramAccessToken.trim() || null;
+        updateData.instagram_user_id = instagramUserId.trim() || null;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          display_name: displayName.trim(),
-          bio: bio.trim(),
-        })
+        .update(updateData)
         .eq('id', user?.id);
 
       if (error) throw error;
@@ -249,6 +262,48 @@ const AccountSettings = () => {
                   {bio.length}/500 caratteri
                 </p>
               </div>
+
+              {accountType === "creator" && (
+                <>
+                  <Separator />
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">Integrazione Instagram</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Configura le credenziali per il recupero automatico delle views
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="instagram-access-token">Instagram Access Token</Label>
+                      <Input 
+                        id="instagram-access-token"
+                        type="text"
+                        placeholder="Il tuo Instagram Access Token"
+                        value={instagramAccessToken}
+                        onChange={(e) => setInstagramAccessToken(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Token di accesso per l'API Instagram Graph. Puoi ottenerlo dal Meta Developer Portal.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="instagram-user-id">Instagram Business Account ID</Label>
+                      <Input 
+                        id="instagram-user-id"
+                        type="text"
+                        placeholder="Il tuo Instagram Business Account ID"
+                        value={instagramUserId}
+                        onChange={(e) => setInstagramUserId(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        L'ID del tuo account Instagram Business
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="flex gap-4">
                 <Button 

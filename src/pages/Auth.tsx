@@ -24,8 +24,6 @@ const Auth = () => {
   const [displayName, setDisplayName] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [showResetPassword, setShowResetPassword] = useState(false);
-  const [instagramAccessToken, setInstagramAccessToken] = useState("");
-  const [instagramUserId, setInstagramUserId] = useState("");
 
   // Check if user is already logged in
   useEffect(() => {
@@ -101,19 +99,6 @@ const Auth = () => {
         setIsLoading(false);
         return;
       }
-
-      if (accountType === "creator") {
-        if (!instagramAccessToken.trim()) {
-          toast.error("Instagram Access Token richiesto per i creator");
-          setIsLoading(false);
-          return;
-        }
-        if (!instagramUserId.trim()) {
-          toast.error("Instagram User ID richiesto per i creator");
-          setIsLoading(false);
-          return;
-        }
-      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -129,11 +114,7 @@ const Auth = () => {
         emailRedirectTo: `${window.location.origin}/`,
         data: {
           account_type: accountType,
-          display_name: displayName.trim(),
-          ...(accountType === "creator" && {
-            instagram_access_token: instagramAccessToken.trim(),
-            instagram_user_id: instagramUserId.trim()
-          })
+          display_name: displayName.trim()
         }
       }
     });
@@ -302,35 +283,6 @@ const Auth = () => {
                     required
                   />
                 </div>
-                {accountType === "creator" && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="instagram-access-token">Instagram Access Token</Label>
-                      <Input 
-                        id="instagram-access-token"
-                        type="text"
-                        placeholder="Il tuo Instagram Access Token"
-                        value={instagramAccessToken}
-                        onChange={(e) => setInstagramAccessToken(e.target.value)}
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Necessario per recuperare automaticamente le views dei tuoi video
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="instagram-user-id">Instagram User ID</Label>
-                      <Input 
-                        id="instagram-user-id"
-                        type="text"
-                        placeholder="Il tuo Instagram Business Account ID"
-                        value={instagramUserId}
-                        onChange={(e) => setInstagramUserId(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </>
-                )}
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">{t("email")}</Label>
                   <Input 
