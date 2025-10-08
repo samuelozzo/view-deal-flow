@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       .insert({
         wallet_id: wallet.id,
         amount_cents,
-        method: 'stripe',
+        method: 'card',
         status: 'pending',
         reference: paymentIntent.id,
         metadata: {
