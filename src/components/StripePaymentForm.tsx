@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StripePaymentFormProps {
   onSuccess: () => void;
@@ -13,7 +15,40 @@ export const StripePaymentForm = ({ onSuccess, onCancel }: StripePaymentFormProp
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Setup realtime subscription to wallet updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('[REALTIME] Setting up wallet subscription for user:', user.id);
+    
+    const channel = supabase
+      .channel('wallet-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'wallets',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('[REALTIME] Wallet updated:', payload);
+          toast({
+            title: "Saldo Aggiornato",
+            description: `Il tuo saldo è stato aggiornato: €${(payload.new.available_cents / 100).toFixed(2)}`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[REALTIME] Cleaning up wallet subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
