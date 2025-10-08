@@ -174,7 +174,7 @@ const Dashboard = () => {
     try {
       const { error } = await supabase
         .from('applications')
-        .update({ status: 'rejected' })
+        .delete()
         .eq('id', applicationId)
         .eq('creator_id', user?.id);
 
