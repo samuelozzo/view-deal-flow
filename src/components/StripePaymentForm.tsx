@@ -78,6 +78,7 @@ export const StripePaymentForm = ({ onSuccess, onCancel }: StripePaymentFormProp
           title: "Pagamento Riuscito",
           description: "La ricarica è stata completata con successo. Il saldo verrà aggiornato immediatamente.",
         });
+        // Trigger wallet refetch
         onSuccess();
       }
     } catch (error) {

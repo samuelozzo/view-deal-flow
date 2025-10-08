@@ -91,9 +91,9 @@ Deno.serve(async (req) => {
           status: topupIntent.status
         });
 
-        // Idempotency check: skip if already succeeded
-        if (topupIntent.status === 'succeeded') {
-          console.log(`✅ [WEBHOOK] Payment already processed (topup_intent succeeded): ${paymentIntentId}`);
+        // Idempotency check: skip if already completed
+        if (topupIntent.status === 'completed') {
+          console.log(`✅ [WEBHOOK] Payment already processed (topup_intent completed): ${paymentIntentId}`);
           break;
         }
 
@@ -123,11 +123,11 @@ Deno.serve(async (req) => {
         });
 
         // ATOMIC TRANSACTION: Update topup_intent status first
-        console.log('[WEBHOOK STEP 6] Updating topup_intent to succeeded...');
+        console.log('[WEBHOOK STEP 6] Updating topup_intent to completed...');
         const { data: updatedTopupIntent, error: updateTopupError } = await supabase
           .from('topup_intents')
           .update({
-            status: 'succeeded',
+            status: 'completed',
             completed_at: new Date().toISOString(),
           })
           .eq('id', topupIntent.id)
@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
           break;
         }
 
-        console.log('[WEBHOOK STEP 7] Topup intent marked as succeeded');
+        console.log('[WEBHOOK STEP 7] Topup intent marked as completed');
 
         // ATOMIC TRANSACTION: Update wallet balance
         console.log('[WEBHOOK STEP 8] Updating wallet balance...');
