@@ -81,35 +81,12 @@ Deno.serve(async (req) => {
 
     const paymentIntent = await stripeResponse.json();
 
-    // Create topup intent record
-    const { data: topupIntent, error: topupError } = await supabase
-      .from('topup_intents')
-      .insert({
-        wallet_id: wallet.id,
-        amount_cents,
-        method: 'card',
-        status: 'pending',
-        reference: paymentIntent.id,
-        metadata: {
-          stripe_payment_intent: paymentIntent.id,
-          ...metadata,
-        },
-      })
-      .select()
-      .single();
-
-    if (topupError) {
-      console.error('Error creating topup intent:', topupError);
-      throw topupError;
-    }
-
-    console.log(`Payment intent created: ${paymentIntent.id}`);
+    console.log(`Payment intent created: ${paymentIntent.id}, waiting for successful payment before creating topup_intent`);
 
     return new Response(
       JSON.stringify({
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
-        topupIntentId: topupIntent.id,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -98,15 +98,32 @@ Deno.serve(async (req) => {
           console.log('[WEBHOOK] Search by reference:', { found: !!topupIntent, error: findError });
         }
 
+        // If no topup_intent exists, create it now (payment succeeded without prior topup_intent)
         if (!topupIntent) {
-          console.error('[WEBHOOK ERROR] Topup intent not found after all attempts:', {
-            event_type: event.type,
-            payment_intent_id: piId,
-            wallet_id: walletId,
-            topup_id: topupId,
-            error: findError
-          });
-          throw new Error(`Topup intent not found for payment: ${piId}`);
+          console.log(`[WEBHOOK] Creating topup_intent for successful payment ${piId}`);
+          const { data: newTopup, error: createError } = await supabase
+            .from('topup_intents')
+            .insert({
+              wallet_id: walletId,
+              amount_cents: amountCents,
+              method: 'card',
+              status: 'pending',
+              reference: piId,
+              metadata: {
+                stripe_payment_intent: piId,
+                created_on_webhook: true,
+              },
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error(`[WEBHOOK ERROR] Failed to create topup_intent:`, createError);
+            throw new Error(`Failed to create topup intent: ${createError.message}`);
+          }
+          
+          topupIntent = newTopup;
+          console.log(`✅ [WEBHOOK] Created topup_intent ${topupIntent.id}`);
         }
 
         const finalWalletId = topupIntent.wallet_id;
