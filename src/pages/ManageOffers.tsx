@@ -91,26 +91,48 @@ const ManageOffers = () => {
     if (!offerToDelete) return;
 
     try {
-      const { error } = await supabase
-        .from("offers")
-        .delete()
-        .eq("id", offerToDelete.id);
+      // Call edge function to cancel offer and release escrow funds
+      const { data, error } = await supabase.functions.invoke('cancel-offer', {
+        body: {
+          offer_id: offerToDelete.id,
+        },
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error cancelling offer:", error);
+        toast({
+          title: "Errore",
+          description: error.message || "Impossibile annullare l'offerta",
+          variant: "destructive",
+        });
+        return;
+      }
 
+      if (!data?.success) {
+        toast({
+          title: "Errore",
+          description: data?.error || "Impossibile annullare l'offerta",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fundsReleased = data.funds_released || 0;
       toast({
         title: "Successo",
-        description: "Offerta eliminata con successo",
+        description: fundsReleased > 0 
+          ? `Offerta annullata e €${(fundsReleased / 100).toFixed(2)} riaccreditati al tuo wallet`
+          : "Offerta annullata con successo",
       });
 
       setOffers(offers.filter((o) => o.id !== offerToDelete.id));
       setDeleteDialogOpen(false);
       setOfferToDelete(null);
     } catch (error) {
-      console.error("Error deleting offer:", error);
+      console.error("Error cancelling offer:", error);
       toast({
         title: "Errore",
-        description: "Impossibile eliminare l'offerta",
+        description: "Impossibile annullare l'offerta",
         variant: "destructive",
       });
     }
