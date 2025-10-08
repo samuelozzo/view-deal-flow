@@ -48,52 +48,79 @@ Deno.serve(async (req) => {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
-        const paymentIntentId = paymentIntent.id;
+        const piId = paymentIntent.id;
         const amountCents = paymentIntent.amount;
         const metadata = paymentIntent.metadata || {};
         
         console.log('[WEBHOOK STEP 1] Payment succeeded:', {
           event_type: event.type,
-          payment_intent_id: paymentIntentId,
+          payment_intent_id: piId,
           amount_cents: amountCents,
           metadata
         });
 
         // Check if this is a wallet topup
         if (metadata.type !== 'wallet_topup') {
-          console.log(`[WEBHOOK] Skipping payment ${paymentIntentId} - not a wallet topup (type: ${metadata.type})`);
+          console.log(`[WEBHOOK] Skipping payment ${piId} - not a wallet topup (type: ${metadata.type})`);
           break;
         }
 
-        console.log('[WEBHOOK STEP 2] Searching for topup_intent...');
-        // Find the topup intent
-        const { data: topupIntent, error: findError } = await supabase
-          .from('topup_intents')
-          .select('*')
-          .eq('reference', paymentIntentId)
-          .single();
+        const walletId = metadata.walletId;
+        const topupId = metadata.topupId;
 
-        if (findError || !topupIntent) {
-          console.error('[WEBHOOK ERROR] Topup intent not found:', {
-            event_type: event.type,
-            payment_intent_id: paymentIntentId,
-            error: findError
-          });
-          throw new Error(`Topup intent not found for payment: ${paymentIntentId}`);
+        console.log('[WEBHOOK STEP 2] Searching for topup_intent...', { piId, walletId, topupId });
+        
+        // Robust search logic for topup_intent
+        let topupIntent;
+        let findError;
+
+        // Try by topupId first (if provided in metadata)
+        if (topupId) {
+          const result = await supabase
+            .from('topup_intents')
+            .select('*')
+            .eq('id', topupId)
+            .single();
+          topupIntent = result.data;
+          findError = result.error;
+          console.log('[WEBHOOK] Search by topupId:', { found: !!topupIntent, error: findError });
         }
 
-        const walletId = topupIntent.wallet_id;
+        // Fallback: try by reference field (should contain payment_intent_id)
+        if (!topupIntent) {
+          const result = await supabase
+            .from('topup_intents')
+            .select('*')
+            .eq('reference', piId)
+            .single();
+          topupIntent = result.data;
+          findError = result.error;
+          console.log('[WEBHOOK] Search by reference:', { found: !!topupIntent, error: findError });
+        }
+
+        if (!topupIntent) {
+          console.error('[WEBHOOK ERROR] Topup intent not found after all attempts:', {
+            event_type: event.type,
+            payment_intent_id: piId,
+            wallet_id: walletId,
+            topup_id: topupId,
+            error: findError
+          });
+          throw new Error(`Topup intent not found for payment: ${piId}`);
+        }
+
+        const finalWalletId = topupIntent.wallet_id;
 
         console.log('[WEBHOOK STEP 3] Found topup_intent:', {
           topup_intent_id: topupIntent.id,
-          wallet_id: walletId,
+          wallet_id: finalWalletId,
           amount_cents: topupIntent.amount_cents,
           status: topupIntent.status
         });
 
         // Idempotency check: skip if already completed
         if (topupIntent.status === 'completed') {
-          console.log(`✅ [WEBHOOK] Payment already processed (topup_intent completed): ${paymentIntentId}`);
+          console.log(`✅ [WEBHOOK] Payment already processed (topup_intent completed): ${piId}`);
           break;
         }
 
@@ -102,22 +129,22 @@ Deno.serve(async (req) => {
         const { data: wallet, error: walletError } = await supabase
           .from('wallets')
           .select('available_cents, user_id')
-          .eq('id', walletId)
+          .eq('id', finalWalletId)
           .single();
 
         if (walletError || !wallet) {
           console.error('[WEBHOOK ERROR] Wallet not found:', {
             event_type: event.type,
-            payment_intent_id: paymentIntentId,
-            wallet_id: walletId,
+            payment_intent_id: piId,
+            wallet_id: finalWalletId,
             error: walletError
           });
-          throw new Error(`Wallet not found: ${walletId}`);
+          throw new Error(`Wallet not found: ${finalWalletId}`);
         }
 
         const walletUserId = wallet.user_id;
         console.log('[WEBHOOK STEP 5] Current wallet state:', {
-          wallet_id: walletId,
+          wallet_id: finalWalletId,
           user_id: walletUserId,
           current_available_cents: wallet.available_cents
         });
@@ -137,7 +164,7 @@ Deno.serve(async (req) => {
         if (updateTopupError) {
           console.error('[WEBHOOK ERROR] Failed to update topup_intent:', {
             event_type: event.type,
-            payment_intent_id: paymentIntentId,
+            payment_intent_id: piId,
             topup_intent_id: topupIntent.id,
             error: updateTopupError
           });
@@ -146,7 +173,7 @@ Deno.serve(async (req) => {
 
         // If no rows updated, another webhook already processed this
         if (!updatedTopupIntent || updatedTopupIntent.length === 0) {
-          console.log(`✅ [WEBHOOK] Topup intent already processed by another webhook: ${paymentIntentId}`);
+          console.warn(`⚠️ [WEBHOOK] Topup intent already processed by another webhook: ${piId}`);
           break;
         }
 
@@ -161,14 +188,14 @@ Deno.serve(async (req) => {
             available_cents: newBalance,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', walletId)
+          .eq('id', finalWalletId)
           .select();
 
         if (updateWalletError) {
           console.error('[WEBHOOK ERROR] Failed to update wallet balance:', {
             event_type: event.type,
-            payment_intent_id: paymentIntentId,
-            wallet_id: walletId,
+            payment_intent_id: piId,
+            wallet_id: finalWalletId,
             user_id: walletUserId,
             old_balance: wallet.available_cents,
             new_balance: newBalance,
@@ -182,16 +209,21 @@ Deno.serve(async (req) => {
         if (!updatedWallet || updatedWallet.length === 0) {
           console.error('[WEBHOOK ERROR] Wallet update returned 0 rows:', {
             event_type: event.type,
-            payment_intent_id: paymentIntentId,
-            wallet_id: walletId,
+            payment_intent_id: piId,
+            wallet_id: finalWalletId,
             user_id: walletUserId
           });
           throw new Error('Wallet update affected 0 rows');
         }
 
-        console.log(`✅ Payment confirmed for wallet ${walletId}, amount: ${topupIntent.amount_cents} cents`);
+        console.log(`✅ topup completed`, {
+          piId,
+          walletId: finalWalletId,
+          topupId: topupIntent.id,
+          amount_cents: topupIntent.amount_cents
+        });
         console.log('[WEBHOOK STEP 9] Wallet balance updated:', {
-          wallet_id: walletId,
+          wallet_id: finalWalletId,
           old_balance: wallet.available_cents,
           new_balance: newBalance,
           amount_added: topupIntent.amount_cents
@@ -202,7 +234,7 @@ Deno.serve(async (req) => {
         const { data: txData, error: txError } = await supabase
           .from('wallet_transactions')
           .insert({
-            wallet_id: walletId,
+            wallet_id: finalWalletId,
             type: 'topup',
             direction: 'in',
             amount_cents: topupIntent.amount_cents,
@@ -210,7 +242,7 @@ Deno.serve(async (req) => {
             reference_type: 'topup_intent',
             reference_id: topupIntent.id,
             metadata: {
-              stripe_payment_intent: paymentIntentId,
+              stripe_payment_intent: piId,
               method: 'stripe',
             },
           })
@@ -243,8 +275,8 @@ Deno.serve(async (req) => {
 
         console.log('✅ [WEBHOOK SUCCESS] Topup completed successfully:', {
           event_type: event.type,
-          payment_intent_id: paymentIntentId,
-          wallet_id: walletId,
+          payment_intent_id: piId,
+          wallet_id: finalWalletId,
           user_id: walletUserId,
           transaction_id: txData?.id,
           old_balance: wallet.available_cents,
