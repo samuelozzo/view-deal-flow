@@ -126,14 +126,49 @@ const Navbar = () => {
             >
               {t("howItWorks")}
             </Link>
-            <Link
-              to="/offers"
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                isActive("/offers") ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {t("browseOffers")}
-            </Link>
+            {isBusiness ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      isActive("/offers") || isActive("/create-offer") || isActive("/manage-offers") 
+                        ? "text-primary" 
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    Offerte
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="bg-background z-50">
+                  <DropdownMenuItem asChild>
+                    <Link to="/offers" className="cursor-pointer">
+                      {t("browseOffers")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/create-offer" className="cursor-pointer">
+                      {t("postOffer")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/manage-offers" className="cursor-pointer">
+                      Gestione Offerte
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link
+                to="/offers"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive("/offers") ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                {t("browseOffers")}
+              </Link>
+            )}
             <Link
               to="/dashboard"
               className={`text-sm font-medium transition-colors hover:text-primary ${
@@ -142,26 +177,6 @@ const Navbar = () => {
             >
               {t("dashboard")}
             </Link>
-            {isBusiness && (
-              <>
-                <Link
-                  to="/create-offer"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    isActive("/create-offer") ? "text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  {t("postOffer")}
-                </Link>
-                <Link
-                  to="/manage-offers"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    isActive("/manage-offers") ? "text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  Gestione Offerte
-                </Link>
-              </>
-            )}
             {isAdmin && (
               <Link
                 to="/admin"
@@ -262,13 +277,42 @@ const Navbar = () => {
             >
               {t("howItWorks")}
             </Link>
-            <Link
-              to="/offers"
-              className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {t("browseOffers")}
-            </Link>
+            {isBusiness ? (
+              <>
+                <div className="py-2">
+                  <p className="text-xs font-semibold text-muted-foreground px-2 mb-2">Offerte</p>
+                  <Link
+                    to="/offers"
+                    className="block py-2 px-4 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent rounded-md"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t("browseOffers")}
+                  </Link>
+                  <Link
+                    to="/create-offer"
+                    className="block py-2 px-4 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent rounded-md"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t("postOffer")}
+                  </Link>
+                  <Link
+                    to="/manage-offers"
+                    className="block py-2 px-4 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent rounded-md"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Gestione Offerte
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <Link
+                to="/offers"
+                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t("browseOffers")}
+              </Link>
+            )}
             <Link
               to="/dashboard"
               className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
@@ -276,24 +320,6 @@ const Navbar = () => {
             >
               {t("dashboard")}
             </Link>
-            {isBusiness && (
-              <>
-                <Link
-                  to="/create-offer"
-                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t("postOffer")}
-                </Link>
-                <Link
-                  to="/manage-offers"
-                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Gestione Offerte
-                </Link>
-              </>
-            )}
             {isAdmin && (
               <Link
                 to="/admin"
