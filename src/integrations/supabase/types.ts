@@ -538,12 +538,65 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      payout_requests_user_view: {
+        Row: {
+          admin_note: string | null
+          amount_cents: number | null
+          iban_masked: string | null
+          id: string | null
+          processed_at: string | null
+          requested_at: string | null
+          status: Database["public"]["Enums"]["payout_status"] | null
+          wallet_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_cents?: number | null
+          iban_masked?: never
+          id?: string | null
+          processed_at?: string | null
+          requested_at?: string | null
+          status?: Database["public"]["Enums"]["payout_status"] | null
+          wallet_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount_cents?: number | null
+          iban_masked?: never
+          id?: string | null
+          processed_at?: string | null
+          requested_at?: string | null
+          status?: Database["public"]["Enums"]["payout_status"] | null
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_requests_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       delete_user_account: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_my_payout_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          admin_note: string
+          amount_cents: number
+          iban_masked: string
+          id: string
+          processed_at: string
+          requested_at: string
+          status: Database["public"]["Enums"]["payout_status"]
+          wallet_id: string
+        }[]
       }
       has_role: {
         Args: {
