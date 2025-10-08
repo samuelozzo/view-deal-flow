@@ -60,6 +60,12 @@ Deno.serve(async (req) => {
           break;
         }
 
+        // Idempotency check: skip if already processed
+        if (topupIntent.status === 'completed') {
+          console.log(`Payment already processed: ${paymentIntent.id}`);
+          break;
+        }
+
         // Update topup intent status
         const { error: updateTopupError } = await supabase
           .from('topup_intents')

@@ -143,7 +143,7 @@ const Wallet = () => {
     setPayoutProcessing(true);
 
     try {
-      const { error } = await supabase.functions.invoke("wallet-payout", {
+      const { data, error } = await supabase.functions.invoke("request-payout", {
         body: {
           amount_cents: amountCents,
           iban: payoutIban,
@@ -153,8 +153,8 @@ const Wallet = () => {
       if (error) throw error;
 
       toast({
-        title: "Richiesta inviata",
-        description: "La tua richiesta di prelievo è in elaborazione.",
+        title: "Richiesta Payout Inviata",
+        description: `La tua richiesta di payout di €${(amountCents / 100).toFixed(2)} è in elaborazione.`,
       });
 
       setPayoutOpen(false);

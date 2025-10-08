@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
         amount: amount_cents.toString(),
         currency: 'eur',
         'automatic_payment_methods[enabled]': 'true',
+        'metadata[type]': 'wallet_topup',
         'metadata[user_id]': user.id,
         'metadata[wallet_id]': wallet.id,
         ...Object.fromEntries(
