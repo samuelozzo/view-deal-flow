@@ -16,6 +16,7 @@ import { Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Loader2, CreditCa
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { StripePaymentForm } from "@/components/StripePaymentForm";
+import { DevStripeWebhookTester } from "@/components/DevStripeWebhookTester";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -529,6 +530,10 @@ const Wallet = () => {
             </div>
           </CardContent>
         </Card>
+
+        {import.meta.env.DEV && (
+          <DevStripeWebhookTester />
+        )}
 
         <Card>
           <CardHeader>

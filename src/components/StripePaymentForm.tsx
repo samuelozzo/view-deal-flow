@@ -40,8 +40,8 @@ export const StripePaymentForm = ({ onSuccess, onCancel }: StripePaymentFormProp
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         console.log("Payment succeeded:", paymentIntent.id);
         toast({
-          title: "Pagamento Completato",
-          description: "La ricarica è stata completata con successo. Il saldo verrà aggiornato a breve.",
+          title: "Pagamento Riuscito",
+          description: "La ricarica è stata completata con successo. Il saldo verrà aggiornato immediatamente.",
         });
         onSuccess();
       }
