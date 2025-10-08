@@ -215,6 +215,30 @@ Deno.serve(async (req) => {
             message: `La tua ricarica di €${(amountCents / 100).toFixed(2)} è stata completata con successo.`,
             link: '/wallet',
           });
+
+          // Send invoice email (non-blocking)
+          try {
+            const invoiceResponse = await fetch(`${supabaseUrl}/functions/v1/send-invoice-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseServiceRoleKey}`,
+              },
+              body: JSON.stringify({
+                wallet_id: walletId,
+                amount_cents: amountCents,
+                transaction_date: new Date().toISOString(),
+              }),
+            });
+
+            if (!invoiceResponse.ok) {
+              console.error('Failed to send invoice email:', await invoiceResponse.text());
+            } else {
+              console.log('✓ Invoice email sent successfully');
+            }
+          } catch (emailError) {
+            console.error('Error sending invoice email (non-critical):', emailError);
+          }
         }
 
         break;

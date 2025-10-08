@@ -3,6 +3,9 @@ project_id = "ikztbocitxqpajnckxlu"
 [functions.wallet-topup]
 verify_jwt = true
 
+[functions.send-invoice-email]
+verify_jwt = false
+
 [functions.wallet-payout]
 verify_jwt = true
 
