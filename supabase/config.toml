@@ -1,1 +1,19 @@
 project_id = "ikztbocitxqpajnckxlu"
+
+[functions.wallet-topup]
+verify_jwt = true
+
+[functions.wallet-payout]
+verify_jwt = true
+
+[functions.release-escrows]
+verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.process-creator-payout]
+verify_jwt = true

@@ -13,6 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Loader2, CreditCard, Building2 } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import { StripePaymentForm } from "@/components/StripePaymentForm";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 interface WalletData {
   id: string;
@@ -49,6 +54,7 @@ const Wallet = () => {
   const [topupAmount, setTopupAmount] = useState("");
   const [topupMethod, setTopupMethod] = useState<"card" | "bank_transfer">("card");
   const [topupProcessing, setTopupProcessing] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -179,15 +185,54 @@ const Wallet = () => {
 
     const amountCents = Math.floor(parseFloat(topupAmount) * 100);
     
-    if (amountCents < 1000) {
+    if (amountCents < 50) {
       toast({
         title: "Importo minimo",
-        description: "L'importo minimo per la ricarica è €10.",
+        description: "L'importo minimo per la ricarica è €0.50.",
         variant: "destructive",
       });
       return;
     }
 
+    // If card payment, use Stripe
+    if (topupMethod === "card") {
+      setTopupProcessing(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("create-payment-intent", {
+          body: {
+            amount_cents: amountCents,
+            metadata: {
+              type: "wallet_topup",
+            },
+          },
+        });
+
+        if (error) {
+          console.error("Payment intent error:", error);
+          toast({
+            title: "Errore",
+            description: "Impossibile creare il pagamento",
+            variant: "destructive",
+          });
+          setTopupProcessing(false);
+          return;
+        }
+
+        setClientSecret(data.clientSecret);
+        setTopupProcessing(false);
+      } catch (error) {
+        console.error("Topup error:", error);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore imprevisto",
+          variant: "destructive",
+        });
+        setTopupProcessing(false);
+      }
+      return;
+    }
+
+    // Bank transfer flow (existing)
     setTopupProcessing(true);
 
     try {
@@ -219,6 +264,21 @@ const Wallet = () => {
     } finally {
       setTopupProcessing(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    toast({
+      title: "Pagamento Completato",
+      description: "La ricarica è stata completata con successo",
+    });
+    setTopupOpen(false);
+    setTopupAmount("");
+    setClientSecret(null);
+    fetchWalletData();
+  };
+
+  const handlePaymentCancel = () => {
+    setClientSecret(null);
   };
 
   const getTransactionIcon = (type: string, direction: string) => {
@@ -368,53 +428,70 @@ const Wallet = () => {
                     <DialogHeader>
                       <DialogTitle>Ricarica Wallet</DialogTitle>
                       <DialogDescription>
-                        Importo minimo: €10. Scegli il metodo di pagamento preferito.
+                        {clientSecret ? "Completa il pagamento con carta" : "Importo minimo: €0.50. Scegli il metodo di pagamento preferito."}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Importo (€)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="10"
-                          value={topupAmount}
-                          onChange={(e) => setTopupAmount(e.target.value)}
-                          placeholder="10.00"
+                    {!clientSecret ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Importo (€)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0.50"
+                            value={topupAmount}
+                            onChange={(e) => setTopupAmount(e.target.value)}
+                            placeholder="10.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Metodo di Pagamento</Label>
+                          <Select value={topupMethod} onValueChange={(v) => setTopupMethod(v as "card" | "bank_transfer")}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="card">
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="h-4 w-4" />
+                                  Carta di Credito/Debito
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="bank_transfer">
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="h-4 w-4" />
+                                  Bonifico Bancario
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setTopupOpen(false)}>
+                            Annulla
+                          </Button>
+                          <Button onClick={handleTopup} disabled={topupProcessing}>
+                            {topupProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            {topupMethod === "card" ? "Procedi al Pagamento" : "Conferma"}
+                          </Button>
+                        </DialogFooter>
+                      </div>
+                    ) : (
+                      <Elements
+                        stripe={stripePromise}
+                        options={{
+                          clientSecret,
+                          appearance: {
+                            theme: 'stripe',
+                          },
+                        }}
+                      >
+                        <StripePaymentForm
+                          onSuccess={handlePaymentSuccess}
+                          onCancel={handlePaymentCancel}
                         />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Metodo di Pagamento</Label>
-                        <Select value={topupMethod} onValueChange={(v) => setTopupMethod(v as "card" | "bank_transfer")}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="card">
-                              <div className="flex items-center gap-2">
-                                <CreditCard className="h-4 w-4" />
-                                Carta di Credito
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="bank_transfer">
-                              <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4" />
-                                Bonifico Bancario
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setTopupOpen(false)}>
-                        Annulla
-                      </Button>
-                      <Button onClick={handleTopup} disabled={topupProcessing}>
-                        {topupProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Procedi
-                      </Button>
-                    </DialogFooter>
+                      </Elements>
+                    )}
                   </DialogContent>
                 </Dialog>
               )}
