@@ -222,13 +222,19 @@ const Dashboard = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (app: Application) => {
+    // Check if there's an approved submission - if so, show "Accettata in escrow"
+    if (app.submissions && app.submissions.length > 0 && app.submissions[0].status === 'approved') {
+      return <Badge variant="success">Accettata in escrow</Badge>;
+    }
+    
+    // Otherwise, show normal application status
     const variants: Record<string, { variant: any; label: string }> = {
       accepted: { variant: "success", label: t("accepted") },
       pending: { variant: "warning", label: t("pendingReview") },
       rejected: { variant: "destructive", label: t("rejected") },
     };
-    const config = variants[status] || { variant: "default", label: status };
+    const config = variants[app.status] || { variant: "default", label: app.status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -372,7 +378,7 @@ const Dashboard = () => {
                               }
                             </p>
                           </div>
-                          {getStatusBadge(app.status)}
+                          {getStatusBadge(app)}
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
