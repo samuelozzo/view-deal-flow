@@ -175,7 +175,7 @@ const Navbar = () => {
                 isActive("/dashboard") ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              {t("dashboard")}
+              Pannello
             </Link>
             {isAdmin && (
               <Link
@@ -318,7 +318,7 @@ const Navbar = () => {
               className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              {t("dashboard")}
+              Pannello
             </Link>
             {isAdmin && (
               <Link
