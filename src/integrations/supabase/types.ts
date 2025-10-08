@@ -552,6 +552,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_owns_wallet: {
+        Args: { _user_id: string; _wallet_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       account_type: "creator" | "business"
