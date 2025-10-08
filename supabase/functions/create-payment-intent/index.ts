@@ -53,6 +53,27 @@ Deno.serve(async (req) => {
       throw new Error('Stripe not configured');
     }
 
+    // Create topup intent record first (pending status)
+    const { data: topupIntent, error: topupError } = await supabase
+      .from('topup_intents')
+      .insert({
+        wallet_id: wallet.id,
+        amount_cents,
+        method: 'card',
+        status: 'pending',
+        reference: null, // Will be updated after PaymentIntent creation
+        metadata: {
+          ...metadata,
+        },
+      })
+      .select()
+      .single();
+
+    if (topupError) {
+      console.error('Error creating topup intent:', topupError);
+      throw topupError;
+    }
+
     // Create PaymentIntent with Stripe API
     const stripeResponse = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
@@ -66,7 +87,8 @@ Deno.serve(async (req) => {
         'automatic_payment_methods[enabled]': 'true',
         'metadata[type]': 'wallet_topup',
         'metadata[user_id]': user.id,
-        'metadata[wallet_id]': wallet.id,
+        'metadata[walletId]': wallet.id,
+        'metadata[topupId]': topupIntent.id,
         ...Object.fromEntries(
           Object.entries(metadata).map(([key, value]) => [`metadata[${key}]`, String(value)])
         ),
@@ -81,26 +103,20 @@ Deno.serve(async (req) => {
 
     const paymentIntent = await stripeResponse.json();
 
-    // Create topup intent record
-    const { data: topupIntent, error: topupError } = await supabase
+    // Update topup intent with payment intent reference
+    const { error: updateError } = await supabase
       .from('topup_intents')
-      .insert({
-        wallet_id: wallet.id,
-        amount_cents,
-        method: 'card',
-        status: 'pending',
+      .update({
         reference: paymentIntent.id,
         metadata: {
           stripe_payment_intent: paymentIntent.id,
           ...metadata,
         },
       })
-      .select()
-      .single();
+      .eq('id', topupIntent.id);
 
-    if (topupError) {
-      console.error('Error creating topup intent:', topupError);
-      throw topupError;
+    if (updateError) {
+      console.error('Error updating topup intent reference:', updateError);
     }
 
     console.log(`Payment intent created: ${paymentIntent.id}`);
