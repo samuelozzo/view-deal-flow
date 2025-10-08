@@ -174,7 +174,7 @@ const Dashboard = () => {
     try {
       const { error } = await supabase
         .from('applications')
-        .delete()
+        .update({ status: 'rejected' })
         .eq('id', applicationId)
         .eq('creator_id', user?.id);
 
@@ -405,7 +405,7 @@ const Dashboard = () => {
                             <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
                           </Button>
                           
-                          {accountType === 'creator' && app.status === 'pending' && (
+                          {accountType === 'creator' && (app.status === 'pending' || app.status === 'accepted') && (
                             <Button 
                               variant="destructive" 
                               size="sm"
@@ -416,7 +416,7 @@ const Dashboard = () => {
                             </Button>
                           )}
 
-                          {accountType === 'creator' && app.status === 'accepted' && !app.submissions?.length && (
+                          {accountType === 'creator' && (app.status === 'accepted' || app.status === 'pending') && !app.submissions?.length && (
                             <Dialog open={submissionDialogOpen && selectedApplication === app.id} 
                                     onOpenChange={(open) => {
                                       setSubmissionDialogOpen(open);
