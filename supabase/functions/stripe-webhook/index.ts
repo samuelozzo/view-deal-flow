@@ -379,6 +379,270 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case 'charge.updated': {
+        const charge = event.data.object;
+        const chargeStatus = charge.status;
+        const piId = charge.payment_intent;
+        
+        console.log(`[WEBHOOK] Charge updated: ${charge.id}, status: ${chargeStatus}, payment_intent: ${piId}`);
+
+        // Only process if charge is succeeded/paid
+        if (chargeStatus !== 'succeeded' && chargeStatus !== 'paid') {
+          console.log(`[WEBHOOK] Skipping charge ${charge.id} - status not succeeded/paid: ${chargeStatus}`);
+          break;
+        }
+
+        // Check if this is a wallet topup
+        const metadata = charge.metadata || {};
+        if (metadata.type !== 'wallet_topup') {
+          console.log(`[WEBHOOK] Skipping charge ${charge.id} - not a wallet topup (type: ${metadata.type})`);
+          break;
+        }
+
+        const walletId = metadata.walletId;
+        const topupId = metadata.topupId;
+        const amountCents = charge.amount;
+
+        console.log('[WEBHOOK CHARGE] Searching for topup_intent...', { piId, walletId, topupId });
+
+        // Robust search logic for topup_intent
+        let topupIntent;
+        let findError;
+
+        // Try by topupId first (if provided in metadata)
+        if (topupId) {
+          const result = await supabase
+            .from('topup_intents')
+            .select('*')
+            .eq('id', topupId)
+            .single();
+          topupIntent = result.data;
+          findError = result.error;
+          console.log('[WEBHOOK CHARGE] Search by topupId:', { found: !!topupIntent, error: findError });
+        }
+
+        // Fallback: try by reference field (should contain payment_intent_id)
+        if (!topupIntent && piId) {
+          const result = await supabase
+            .from('topup_intents')
+            .select('*')
+            .eq('reference', piId)
+            .single();
+          topupIntent = result.data;
+          findError = result.error;
+          console.log('[WEBHOOK CHARGE] Search by reference:', { found: !!topupIntent, error: findError });
+        }
+
+        // If no topup_intent exists, create it now
+        if (!topupIntent) {
+          console.log(`[WEBHOOK CHARGE] Creating topup_intent for successful charge ${charge.id}`);
+          const { data: newTopup, error: createError } = await supabase
+            .from('topup_intents')
+            .insert({
+              wallet_id: walletId,
+              amount_cents: amountCents,
+              method: 'card',
+              status: 'pending',
+              reference: piId,
+              metadata: {
+                stripe_payment_intent: piId,
+                stripe_charge: charge.id,
+                created_on_webhook: true,
+                created_by_event: 'charge.updated',
+              },
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error(`[WEBHOOK CHARGE ERROR] Failed to create topup_intent:`, createError);
+            throw new Error(`Failed to create topup intent: ${createError.message}`);
+          }
+          
+          topupIntent = newTopup;
+          console.log(`✅ [WEBHOOK CHARGE] Created topup_intent ${topupIntent.id}`);
+        }
+
+        const finalWalletId = topupIntent.wallet_id;
+
+        console.log('[WEBHOOK CHARGE] Found topup_intent:', {
+          topup_intent_id: topupIntent.id,
+          wallet_id: finalWalletId,
+          amount_cents: topupIntent.amount_cents,
+          status: topupIntent.status
+        });
+
+        // Idempotency check: skip if already completed
+        if (topupIntent.status === 'completed') {
+          console.log(`✅ [WEBHOOK CHARGE] Payment already processed (topup_intent completed): ${charge.id}`);
+          break;
+        }
+
+        console.log('[WEBHOOK CHARGE] Fetching wallet...');
+        // Get wallet data
+        const { data: wallet, error: walletError } = await supabase
+          .from('wallets')
+          .select('available_cents, user_id')
+          .eq('id', finalWalletId)
+          .single();
+
+        if (walletError || !wallet) {
+          console.error('[WEBHOOK CHARGE ERROR] Wallet not found:', {
+            event_type: event.type,
+            charge_id: charge.id,
+            wallet_id: finalWalletId,
+            error: walletError
+          });
+          throw new Error(`Wallet not found: ${finalWalletId}`);
+        }
+
+        const walletUserId = wallet.user_id;
+        console.log('[WEBHOOK CHARGE] Current wallet state:', {
+          wallet_id: finalWalletId,
+          user_id: walletUserId,
+          current_available_cents: wallet.available_cents
+        });
+
+        // ATOMIC TRANSACTION: Update topup_intent status first
+        console.log('[WEBHOOK CHARGE] Updating topup_intent to completed...');
+        const { data: updatedTopupIntent, error: updateTopupError } = await supabase
+          .from('topup_intents')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', topupIntent.id)
+          .eq('status', 'pending') // Only update if still pending (idempotency)
+          .select();
+
+        if (updateTopupError) {
+          console.error('[WEBHOOK CHARGE ERROR] Failed to update topup_intent:', {
+            event_type: event.type,
+            charge_id: charge.id,
+            topup_intent_id: topupIntent.id,
+            error: updateTopupError
+          });
+          throw new Error(`Topup intent update failed: ${updateTopupError.message}`);
+        }
+
+        // If no rows updated, another webhook already processed this
+        if (!updatedTopupIntent || updatedTopupIntent.length === 0) {
+          console.warn(`⚠️ [WEBHOOK CHARGE] Topup intent already processed by another webhook: ${charge.id}`);
+          break;
+        }
+
+        console.log('[WEBHOOK CHARGE] Topup intent marked as completed');
+
+        // ATOMIC TRANSACTION: Update wallet balance
+        console.log('[WEBHOOK CHARGE] Updating wallet balance...');
+        const newBalance = wallet.available_cents + topupIntent.amount_cents;
+        const { data: updatedWallet, error: updateWalletError } = await supabase
+          .from('wallets')
+          .update({
+            available_cents: newBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', finalWalletId)
+          .select();
+
+        if (updateWalletError) {
+          console.error('[WEBHOOK CHARGE ERROR] Failed to update wallet balance:', {
+            event_type: event.type,
+            charge_id: charge.id,
+            wallet_id: finalWalletId,
+            user_id: walletUserId,
+            old_balance: wallet.available_cents,
+            new_balance: newBalance,
+            amount_cents: topupIntent.amount_cents,
+            error: updateWalletError
+          });
+          throw new Error(`Wallet update failed: ${updateWalletError.message}`);
+        }
+
+        // Verify update was successful
+        if (!updatedWallet || updatedWallet.length === 0) {
+          console.error('[WEBHOOK CHARGE ERROR] Wallet update returned 0 rows:', {
+            event_type: event.type,
+            charge_id: charge.id,
+            wallet_id: finalWalletId,
+            user_id: walletUserId
+          });
+          throw new Error('Wallet update affected 0 rows');
+        }
+
+        console.log(`✅ topup completed`, {
+          chargeId: charge.id,
+          piId,
+          walletId: finalWalletId,
+          topupId: topupIntent.id,
+          amount_cents: topupIntent.amount_cents
+        });
+        console.log('[WEBHOOK CHARGE] Wallet balance updated:', {
+          wallet_id: finalWalletId,
+          old_balance: wallet.available_cents,
+          new_balance: newBalance,
+          amount_added: topupIntent.amount_cents
+        });
+
+        // Create transaction record (non-critical)
+        console.log('[WEBHOOK CHARGE] Creating transaction record...');
+        const { data: txData, error: txError } = await supabase
+          .from('wallet_transactions')
+          .insert({
+            wallet_id: finalWalletId,
+            type: 'topup',
+            direction: 'in',
+            amount_cents: topupIntent.amount_cents,
+            status: 'completed',
+            reference_type: 'topup_intent',
+            reference_id: topupIntent.id,
+            metadata: {
+              stripe_payment_intent: piId,
+              stripe_charge: charge.id,
+              method: 'stripe',
+            },
+          })
+          .select()
+          .single();
+
+        if (txError) {
+          console.error('[WEBHOOK CHARGE ERROR] Failed to create transaction (non-critical):', {
+            error: txError,
+            code: txError.code
+          });
+          // Don't throw - transaction record is for audit trail only
+        } else {
+          console.log('[WEBHOOK CHARGE] Transaction record created:', txData?.id);
+        }
+
+        // Create notification (non-critical)
+        console.log('[WEBHOOK CHARGE] Creating notification...');
+        const { error: notifError } = await supabase.from('notifications').insert({
+          user_id: walletUserId,
+          type: 'topup_completed',
+          title: 'Ricarica Completata',
+          message: `La tua ricarica di €${(topupIntent.amount_cents / 100).toFixed(2)} è stata completata con successo.`,
+          link: '/wallet',
+        });
+
+        if (notifError) {
+          console.error('[WEBHOOK CHARGE ERROR] Failed to create notification (non-critical):', notifError);
+        }
+
+        console.log('✅ [WEBHOOK CHARGE SUCCESS] Topup completed successfully:', {
+          event_type: event.type,
+          charge_id: charge.id,
+          payment_intent_id: piId,
+          wallet_id: finalWalletId,
+          user_id: walletUserId,
+          transaction_id: txData?.id,
+          old_balance: wallet.available_cents,
+          new_balance: newBalance,
+          amount_added: topupIntent.amount_cents
+        });
+        break;
+      }
+
       case 'charge.refunded': {
         const charge = event.data.object;
         console.log(`Charge refunded: ${charge.id}`);
