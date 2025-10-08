@@ -306,6 +306,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          instagram_access_token: string | null
+          instagram_user_id: string | null
           platform_links: Json | null
           updated_at: string
         }
@@ -316,6 +318,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          instagram_access_token?: string | null
+          instagram_user_id?: string | null
           platform_links?: Json | null
           updated_at?: string
         }
@@ -326,6 +330,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          instagram_access_token?: string | null
+          instagram_user_id?: string | null
           platform_links?: Json | null
           updated_at?: string
         }
