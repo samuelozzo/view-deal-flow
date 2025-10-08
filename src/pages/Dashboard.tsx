@@ -350,125 +350,135 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {applications.map((app) => (
-                  <Card key={app.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                       <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-1">{app.offers.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {accountType === 'business' 
-                              ? `Creator: ${app.profiles?.display_name || "Unknown Creator"}`
-                              : `${t("by")} ${app.offers.profiles?.display_name || "Unknown Business"}`
-                            }
-                          </p>
+                {applications.map((app) => {
+                  console.log('Application data:', {
+                    id: app.id,
+                    status: app.status,
+                    accountType,
+                    hasSubmissions: !!app.submissions?.length,
+                    submissionsCount: app.submissions?.length || 0
+                  });
+                  
+                  return (
+                    <Card key={app.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                         <div className="flex-1">
+                            <h3 className="font-semibold text-lg mb-1">{app.offers.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {accountType === 'business' 
+                                ? `Creator: ${app.profiles?.display_name || "Unknown Creator"}`
+                                : `${t("by")} ${app.offers.profiles?.display_name || "Unknown Business"}`
+                              }
+                            </p>
+                          </div>
+                          {getStatusBadge(app.status)}
                         </div>
-                        {getStatusBadge(app.status)}
-                      </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">{t("reward")}</p>
-                          <p className="font-semibold">
-                            €{(app.offers.total_reward_cents / 100).toFixed(2)}
-                          </p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">{t("reward")}</p>
+                            <p className="font-semibold">
+                              €{(app.offers.total_reward_cents / 100).toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">{t("requiredViews")}</p>
+                            <p className="font-semibold">
+                              {app.offers.required_views.toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">{t("appliedOn")}</p>
+                            <p className="font-semibold">
+                              {new Date(app.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">{t("status")}</p>
+                            <p className="font-semibold capitalize">{app.status}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">{t("requiredViews")}</p>
-                          <p className="font-semibold">
-                            {app.offers.required_views.toLocaleString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">{t("appliedOn")}</p>
-                          <p className="font-semibold">
-                            {new Date(app.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">{t("status")}</p>
-                          <p className="font-semibold capitalize">{app.status}</p>
-                        </div>
-                      </div>
 
-                       <div className="flex gap-2 flex-wrap">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
-                        </Button>
-                        
-                        {accountType === 'creator' && app.status === 'pending' && (
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            onClick={() => handleCancelApplication(app.id)}
-                          >
-                            <X className="mr-2 h-4 w-4" />
-                            Annulla Candidatura
+                         <div className="flex gap-2 flex-wrap">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
                           </Button>
-                        )}
+                          
+                          {accountType === 'creator' && app.status === 'pending' && (
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => handleCancelApplication(app.id)}
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Annulla Candidatura
+                            </Button>
+                          )}
 
-                        {accountType === 'creator' && app.status === 'accepted' && !app.submissions?.length && (
-                          <Dialog open={submissionDialogOpen && selectedApplication === app.id} 
-                                  onOpenChange={(open) => {
-                                    setSubmissionDialogOpen(open);
-                                    if (open) setSelectedApplication(app.id);
-                                  }}>
-                            <DialogTrigger asChild>
-                              <Button variant="hero" size="sm">
-                                <Video className="mr-2 h-4 w-4" />
-                                Carica Video
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Carica il Tuo Video</DialogTitle>
-                                <DialogDescription>
-                                  Inserisci il link al tuo contenuto per la verifica da parte dell'admin
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor="videoUrl">URL Video *</Label>
-                                  <Input
-                                    id="videoUrl"
-                                    placeholder="https://tiktok.com/@user/video/123..."
-                                    value={videoUrl}
-                                    onChange={(e) => setVideoUrl(e.target.value)}
-                                  />
-                                </div>
-                                <Button 
-                                  onClick={handleSubmitVideo} 
-                                  className="w-full"
-                                  disabled={submitting || !videoUrl}
-                                >
-                                  {submitting ? "Invio in corso..." : "Invia Video"}
+                          {accountType === 'creator' && app.status === 'accepted' && !app.submissions?.length && (
+                            <Dialog open={submissionDialogOpen && selectedApplication === app.id} 
+                                    onOpenChange={(open) => {
+                                      setSubmissionDialogOpen(open);
+                                      if (open) setSelectedApplication(app.id);
+                                    }}>
+                              <DialogTrigger asChild>
+                                <Button variant="hero" size="sm">
+                                  <Video className="mr-2 h-4 w-4" />
+                                  Carica Video
                                 </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        )}
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Carica il Tuo Video</DialogTitle>
+                                  <DialogDescription>
+                                    Inserisci il link al tuo contenuto per la verifica da parte dell'admin
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label htmlFor="videoUrl">URL Video *</Label>
+                                    <Input
+                                      id="videoUrl"
+                                      placeholder="https://tiktok.com/@user/video/123..."
+                                      value={videoUrl}
+                                      onChange={(e) => setVideoUrl(e.target.value)}
+                                    />
+                                  </div>
+                                  <Button 
+                                    onClick={handleSubmitVideo} 
+                                    className="w-full"
+                                    disabled={submitting || !videoUrl}
+                                  >
+                                    {submitting ? "Invio in corso..." : "Invia Video"}
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
 
-                        {accountType === 'creator' && app.submissions && app.submissions.length > 0 && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <Upload className="h-3 w-3" />
-                            {app.submissions[0].status === 'pending_verification' && 'In Revisione'}
-                            {app.submissions[0].status === 'verified' && 'Approvato'}
-                            {app.submissions[0].status === 'rejected' && 'Rifiutato'}
-                          </Badge>
-                        )}
-                        
-                        {app.status === 'accepted' && (
-                          <Button variant="hero" size="sm" asChild>
-                            <Link to={`/chat/${app.id}`}>
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              {t("openChat")}
-                            </Link>
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          {accountType === 'creator' && app.submissions && app.submissions.length > 0 && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <Upload className="h-3 w-3" />
+                              {app.submissions[0].status === 'pending_verification' && 'In Revisione'}
+                              {app.submissions[0].status === 'verified' && 'Approvato'}
+                              {app.submissions[0].status === 'rejected' && 'Rifiutato'}
+                            </Badge>
+                          )}
+                          
+                          {app.status === 'accepted' && (
+                            <Button variant="hero" size="sm" asChild>
+                              <Link to={`/chat/${app.id}`}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                {t("openChat")}
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>
