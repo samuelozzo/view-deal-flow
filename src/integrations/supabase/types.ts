@@ -598,6 +598,19 @@ export type Database = {
           wallet_id: string
         }[]
       }
+      get_my_payout_requests_from_view: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          admin_note: string | null
+          amount_cents: number | null
+          iban_masked: string | null
+          id: string | null
+          processed_at: string | null
+          requested_at: string | null
+          status: Database["public"]["Enums"]["payout_status"] | null
+          wallet_id: string | null
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
