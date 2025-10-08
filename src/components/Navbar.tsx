@@ -143,14 +143,24 @@ const Navbar = () => {
               {t("dashboard")}
             </Link>
             {isBusiness && (
-              <Link
-                to="/create-offer"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  isActive("/create-offer") ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                {t("postOffer")}
-              </Link>
+              <>
+                <Link
+                  to="/create-offer"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActive("/create-offer") ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {t("postOffer")}
+                </Link>
+                <Link
+                  to="/manage-offers"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActive("/manage-offers") ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  Gestione Offerte
+                </Link>
+              </>
             )}
             {isAdmin && (
               <Link
@@ -267,13 +277,22 @@ const Navbar = () => {
               {t("dashboard")}
             </Link>
             {isBusiness && (
-              <Link
-                to="/create-offer"
-                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t("postOffer")}
-              </Link>
+              <>
+                <Link
+                  to="/create-offer"
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t("postOffer")}
+                </Link>
+                <Link
+                  to="/manage-offers"
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Gestione Offerte
+                </Link>
+              </>
             )}
             {isAdmin && (
               <Link
