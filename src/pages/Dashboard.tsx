@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
 import EscrowList from "@/components/EscrowList";
-import { DollarSign, Eye, TrendingUp, MessageSquare, Upload, Video, Wallet as WalletIcon } from "lucide-react";
+import { DollarSign, Eye, TrendingUp, MessageSquare, Upload, Video, Wallet as WalletIcon, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -170,6 +170,24 @@ const Dashboard = () => {
     }
   };
 
+  const handleCancelApplication = async (applicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .delete()
+        .eq('id', applicationId)
+        .eq('creator_id', user?.id);
+
+      if (error) throw error;
+
+      toast.success("Candidatura annullata con successo");
+      fetchApplications();
+    } catch (error: any) {
+      console.error("Error canceling application:", error);
+      toast.error(error.message);
+    }
+  };
+
   const handleSubmitVideo = async () => {
     if (!selectedApplication || !videoUrl) {
       toast.error("Please provide a video URL");
@@ -190,7 +208,7 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      toast.success("Video submitted successfully!");
+      toast.success("Video inviato e in attesa di revisione dall'admin");
       setSubmissionDialogOpen(false);
       setVideoUrl("");
       setVideoViews("");
@@ -373,11 +391,22 @@ const Dashboard = () => {
                         </div>
                       </div>
 
-                       <div className="flex gap-2">
+                       <div className="flex gap-2 flex-wrap">
                         <Button variant="outline" size="sm" asChild>
                           <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
                         </Button>
                         
+                        {accountType === 'creator' && app.status === 'pending' && (
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleCancelApplication(app.id)}
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Annulla Candidatura
+                          </Button>
+                        )}
+
                         {accountType === 'creator' && app.status === 'accepted' && !app.submissions?.length && (
                           <Dialog open={submissionDialogOpen && selectedApplication === app.id} 
                                   onOpenChange={(open) => {
@@ -387,19 +416,19 @@ const Dashboard = () => {
                             <DialogTrigger asChild>
                               <Button variant="hero" size="sm">
                                 <Video className="mr-2 h-4 w-4" />
-                                Submit Video
+                                Carica Video
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Submit Your Video</DialogTitle>
+                                <DialogTitle>Carica il Tuo Video</DialogTitle>
                                 <DialogDescription>
-                                  Add the link to your content for verification
+                                  Inserisci il link al tuo contenuto per la verifica da parte dell'admin
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div>
-                                  <Label htmlFor="videoUrl">Video URL *</Label>
+                                  <Label htmlFor="videoUrl">URL Video *</Label>
                                   <Input
                                     id="videoUrl"
                                     placeholder="https://tiktok.com/@user/video/123..."
@@ -412,7 +441,7 @@ const Dashboard = () => {
                                   className="w-full"
                                   disabled={submitting || !videoUrl}
                                 >
-                                  {submitting ? "Submitting..." : "Submit Video"}
+                                  {submitting ? "Invio in corso..." : "Invia Video"}
                                 </Button>
                               </div>
                             </DialogContent>
@@ -422,7 +451,9 @@ const Dashboard = () => {
                         {accountType === 'creator' && app.submissions && app.submissions.length > 0 && (
                           <Badge variant="secondary" className="flex items-center gap-1">
                             <Upload className="h-3 w-3" />
-                            Video Inviato
+                            {app.submissions[0].status === 'pending_verification' && 'In Revisione'}
+                            {app.submissions[0].status === 'verified' && 'Approvato'}
+                            {app.submissions[0].status === 'rejected' && 'Rifiutato'}
                           </Badge>
                         )}
                         
