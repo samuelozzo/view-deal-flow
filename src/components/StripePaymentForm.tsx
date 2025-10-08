@@ -34,11 +34,15 @@ export const StripePaymentForm = ({ onSuccess, onCancel }: StripePaymentFormProp
 
       if (error) {
         toast({
-          title: "Errore",
+          title: "Pagamento Fallito",
           description: error.message || "Si è verificato un errore durante il pagamento",
           variant: "destructive",
         });
       } else {
+        toast({
+          title: "Pagamento Completato",
+          description: "Il pagamento è stato elaborato con successo",
+        });
         onSuccess();
       }
     } catch (error) {

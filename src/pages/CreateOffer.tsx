@@ -107,6 +107,33 @@ const CreateOffer = () => {
         return;
       }
 
+      // Validate business has sufficient funds for cash rewards
+      if (rewardType === "cash" && totalRewardCents > 0) {
+        const { data: wallet, error: walletError } = await supabase
+          .from('wallets')
+          .select('available_cents')
+          .eq('user_id', user.id)
+          .single();
+
+        if (walletError || !wallet) {
+          toast({
+            title: "Errore",
+            description: "Impossibile verificare il saldo del wallet",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (wallet.available_cents < totalRewardCents) {
+          toast({
+            title: "Fondi Insufficienti",
+            description: `Il tuo saldo disponibile (€${(wallet.available_cents / 100).toFixed(2)}) non è sufficiente per questa offerta (€${(totalRewardCents / 100).toFixed(2)}). Ricarica il tuo wallet prima di procedere.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       // Create offer in database
       const { error } = await supabase.from('offers').insert({
         business_id: user.id,
