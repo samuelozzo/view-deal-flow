@@ -49,240 +49,159 @@ Deno.serve(async (req) => {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
         const piId = paymentIntent.id;
-        const amountCents = paymentIntent.amount;
         const metadata = paymentIntent.metadata || {};
-        
-        console.log('[WEBHOOK STEP 1] Payment succeeded:', {
-          event_type: event.type,
-          payment_intent_id: piId,
-          amount_cents: amountCents,
-          metadata
-        });
 
         // Check if this is a wallet topup
         if (metadata.type !== 'wallet_topup') {
-          console.log(`[WEBHOOK] Skipping payment ${piId} - not a wallet topup (type: ${metadata.type})`);
+          console.log(`Skipping payment ${piId} - not wallet_topup`);
           break;
         }
 
-        const walletId = metadata.walletId;
-        const topupId = metadata.topupId;
+        console.log('Processing wallet topup:', { piId, metadata });
 
-        console.log('[WEBHOOK STEP 2] Searching for topup_intent...', { piId, walletId, topupId });
+        // Step 1: Find topup_intent with priority order
+        let topupIntent = null;
         
-        // Robust search logic for topup_intent
-        let topupIntent;
-        let findError;
-
-        // Try by topupId first (if provided in metadata)
-        if (topupId) {
-          const result = await supabase
+        // Priority 1: metadata.topupId
+        if (metadata.topupId) {
+          const { data } = await supabase
             .from('topup_intents')
             .select('*')
-            .eq('id', topupId)
-            .single();
-          topupIntent = result.data;
-          findError = result.error;
-          console.log('[WEBHOOK] Search by topupId:', { found: !!topupIntent, error: findError });
+            .eq('id', metadata.topupId)
+            .maybeSingle();
+          if (data) {
+            topupIntent = data;
+            console.log('Found by metadata.topupId:', topupIntent.id);
+          }
         }
-
-        // Fallback: try by reference field (should contain payment_intent_id)
+        
+        // Priority 2-4: Try reference field variations
         if (!topupIntent) {
-          const result = await supabase
+          const { data } = await supabase
             .from('topup_intents')
             .select('*')
             .eq('reference', piId)
-            .single();
-          topupIntent = result.data;
-          findError = result.error;
-          console.log('[WEBHOOK] Search by reference:', { found: !!topupIntent, error: findError });
+            .maybeSingle();
+          if (data) {
+            topupIntent = data;
+            console.log('Found by reference:', topupIntent.id);
+          }
         }
 
         if (!topupIntent) {
-          console.error('[WEBHOOK ERROR] Topup intent not found after all attempts:', {
-            event_type: event.type,
-            payment_intent_id: piId,
-            wallet_id: walletId,
-            topup_id: topupId,
-            error: findError
-          });
-          throw new Error(`Topup intent not found for payment: ${piId}`);
+          console.error('❌ topup not updated', { piId, reason: 'row_not_found' });
+          return new Response(
+            JSON.stringify({ error: 'Topup intent not found' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
-        const finalWalletId = topupIntent.wallet_id;
+        const topupId = topupIntent.id;
+        const walletId = topupIntent.wallet_id;
+        const amountCents = topupIntent.amount_cents;
 
-        console.log('[WEBHOOK STEP 3] Found topup_intent:', {
-          topup_intent_id: topupIntent.id,
-          wallet_id: finalWalletId,
-          amount_cents: topupIntent.amount_cents,
-          status: topupIntent.status
-        });
-
-        // Idempotency check: skip if already completed
-        if (topupIntent.status === 'completed') {
-          console.log(`✅ [WEBHOOK] Payment already processed (topup_intent completed): ${piId}`);
-          break;
-        }
-
-        console.log('[WEBHOOK STEP 4] Fetching wallet...');
-        // Get wallet data
-        const { data: wallet, error: walletError } = await supabase
-          .from('wallets')
-          .select('available_cents, user_id')
-          .eq('id', finalWalletId)
-          .single();
-
-        if (walletError || !wallet) {
-          console.error('[WEBHOOK ERROR] Wallet not found:', {
-            event_type: event.type,
-            payment_intent_id: piId,
-            wallet_id: finalWalletId,
-            error: walletError
-          });
-          throw new Error(`Wallet not found: ${finalWalletId}`);
-        }
-
-        const walletUserId = wallet.user_id;
-        console.log('[WEBHOOK STEP 5] Current wallet state:', {
-          wallet_id: finalWalletId,
-          user_id: walletUserId,
-          current_available_cents: wallet.available_cents
-        });
-
-        // ATOMIC TRANSACTION: Update topup_intent status first
-        console.log('[WEBHOOK STEP 6] Updating topup_intent to completed...');
-        const { data: updatedTopupIntent, error: updateTopupError } = await supabase
+        // Step 2: Atomic transaction - Update topup_intent
+        const { data: updatedRows, error: updateError } = await supabase
           .from('topup_intents')
           .update({
             status: 'completed',
             completed_at: new Date().toISOString(),
           })
-          .eq('id', topupIntent.id)
-          .eq('status', 'pending') // Only update if still pending (idempotency)
+          .eq('id', topupId)
+          .eq('status', 'pending')
           .select();
 
-        if (updateTopupError) {
-          console.error('[WEBHOOK ERROR] Failed to update topup_intent:', {
-            event_type: event.type,
-            payment_intent_id: piId,
-            topup_intent_id: topupIntent.id,
-            error: updateTopupError
-          });
-          throw new Error(`Topup intent update failed: ${updateTopupError.message}`);
+        if (updateError) {
+          console.error('❌ topup not updated', { piId, reason: 'tx_error', error: updateError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to update topup_intent' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
-        // If no rows updated, another webhook already processed this
-        if (!updatedTopupIntent || updatedTopupIntent.length === 0) {
-          console.warn(`⚠️ [WEBHOOK] Topup intent already processed by another webhook: ${piId}`);
+        if (!updatedRows || updatedRows.length === 0) {
+          console.log('⚠️ Topup already processed (idempotent):', piId);
           break;
         }
 
-        console.log('[WEBHOOK STEP 7] Topup intent marked as completed');
+        // Step 3: Insert transaction (idempotent via unique index)
+        const { error: txError } = await supabase
+          .from('wallet_transactions')
+          .insert({
+            wallet_id: walletId,
+            type: 'topup',
+            direction: 'in',
+            amount_cents: amountCents,
+            status: 'completed',
+            reference_type: 'topup_intent',
+            reference_id: topupId,
+            metadata: {
+              stripe_payment_intent: piId,
+              method: 'stripe',
+            },
+          });
 
-        // ATOMIC TRANSACTION: Update wallet balance
-        console.log('[WEBHOOK STEP 8] Updating wallet balance...');
-        const newBalance = wallet.available_cents + topupIntent.amount_cents;
-        const { data: updatedWallet, error: updateWalletError } = await supabase
+        if (txError && txError.code !== '23505') { // Ignore duplicate key errors
+          console.error('❌ topup not updated', { piId, reason: 'tx_error', error: txError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to create transaction' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Step 4: Update wallet balance - fetch current balance first for atomic update
+        const { data: currentWallet, error: fetchError } = await supabase
+          .from('wallets')
+          .select('available_cents')
+          .eq('id', walletId)
+          .single();
+
+        if (fetchError || !currentWallet) {
+          console.error('❌ topup not updated', { piId, reason: 'wallet_fetch_failed', error: fetchError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch wallet' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const newBalance = currentWallet.available_cents + amountCents;
+        const { data: updatedWallet, error: walletError } = await supabase
           .from('wallets')
           .update({
             available_cents: newBalance,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', finalWalletId)
+          .eq('id', walletId)
           .select();
 
-        if (updateWalletError) {
-          console.error('[WEBHOOK ERROR] Failed to update wallet balance:', {
-            event_type: event.type,
-            payment_intent_id: piId,
-            wallet_id: finalWalletId,
-            user_id: walletUserId,
-            old_balance: wallet.available_cents,
-            new_balance: newBalance,
-            amount_cents: topupIntent.amount_cents,
-            error: updateWalletError
-          });
-          throw new Error(`Wallet update failed: ${updateWalletError.message}`);
+        if (walletError || !updatedWallet || updatedWallet.length === 0) {
+          console.error('❌ topup not updated', { piId, reason: 'wallet_update_failed', error: walletError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to update wallet balance' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
-        // Verify update was successful
-        if (!updatedWallet || updatedWallet.length === 0) {
-          console.error('[WEBHOOK ERROR] Wallet update returned 0 rows:', {
-            event_type: event.type,
-            payment_intent_id: piId,
-            wallet_id: finalWalletId,
-            user_id: walletUserId
-          });
-          throw new Error('Wallet update affected 0 rows');
-        }
-
-        console.log(`✅ topup completed`, {
-          piId,
-          walletId: finalWalletId,
-          topupId: topupIntent.id,
-          amount_cents: topupIntent.amount_cents
-        });
-        console.log('[WEBHOOK STEP 9] Wallet balance updated:', {
-          wallet_id: finalWalletId,
-          old_balance: wallet.available_cents,
-          new_balance: newBalance,
-          amount_added: topupIntent.amount_cents
-        });
-
-        // Create transaction record (non-critical)
-        console.log('[WEBHOOK STEP 10] Creating transaction record...');
-        const { data: txData, error: txError } = await supabase
-          .from('wallet_transactions')
-          .insert({
-            wallet_id: finalWalletId,
-            type: 'topup',
-            direction: 'in',
-            amount_cents: topupIntent.amount_cents,
-            status: 'completed',
-            reference_type: 'topup_intent',
-            reference_id: topupIntent.id,
-            metadata: {
-              stripe_payment_intent: piId,
-              method: 'stripe',
-            },
-          })
-          .select()
-          .single();
-
-        if (txError) {
-          console.error('[WEBHOOK ERROR] Failed to create transaction (non-critical):', {
-            error: txError,
-            code: txError.code
-          });
-          // Don't throw - transaction record is for audit trail only
-        } else {
-          console.log('[WEBHOOK STEP 11] Transaction record created:', txData?.id);
-        }
+        // Step 5: Success logging
+        console.log('✅ topup completed', { piId, topupId, walletId, amount_cents: amountCents });
 
         // Create notification (non-critical)
-        console.log('[WEBHOOK STEP 12] Creating notification...');
-        const { error: notifError } = await supabase.from('notifications').insert({
-          user_id: walletUserId,
-          type: 'topup_completed',
-          title: 'Ricarica Completata',
-          message: `La tua ricarica di €${(topupIntent.amount_cents / 100).toFixed(2)} è stata completata con successo.`,
-          link: '/wallet',
-        });
+        const { data: wallet } = await supabase
+          .from('wallets')
+          .select('user_id')
+          .eq('id', walletId)
+          .single();
 
-        if (notifError) {
-          console.error('[WEBHOOK ERROR] Failed to create notification (non-critical):', notifError);
+        if (wallet) {
+          await supabase.from('notifications').insert({
+            user_id: wallet.user_id,
+            type: 'topup_completed',
+            title: 'Ricarica Completata',
+            message: `La tua ricarica di €${(amountCents / 100).toFixed(2)} è stata completata con successo.`,
+            link: '/wallet',
+          });
         }
 
-        console.log('✅ [WEBHOOK SUCCESS] Topup completed successfully:', {
-          event_type: event.type,
-          payment_intent_id: piId,
-          wallet_id: finalWalletId,
-          user_id: walletUserId,
-          transaction_id: txData?.id,
-          old_balance: wallet.available_cents,
-          new_balance: newBalance,
-          amount_added: topupIntent.amount_cents
-        });
         break;
       }
 
