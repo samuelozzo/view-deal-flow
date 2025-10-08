@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
 import EscrowList from "@/components/EscrowList";
-import { DollarSign, Eye, TrendingUp, MessageSquare, Upload, Video, Wallet as WalletIcon, X } from "lucide-react";
+import { DollarSign, Eye, TrendingUp, MessageSquare, Upload, Video, Wallet as WalletIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -170,23 +170,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleCancelApplication = async (applicationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('applications')
-        .delete()
-        .eq('id', applicationId)
-        .eq('creator_id', user?.id);
-
-      if (error) throw error;
-
-      toast.success("Candidatura annullata con successo");
-      fetchApplications();
-    } catch (error: any) {
-      console.error("Error canceling application:", error);
-      toast.error(error.message);
-    }
-  };
 
   const handleSubmitVideo = async () => {
     if (!selectedApplication || !videoUrl) {
@@ -410,17 +393,6 @@ const Dashboard = () => {
                           <Button variant="outline" size="sm" asChild>
                             <Link to={`/offers/${app.offers.id}`}>{t("viewOffer")}</Link>
                           </Button>
-                          
-                          {accountType === 'creator' && (app.status === 'pending' || app.status === 'accepted') && (
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => handleCancelApplication(app.id)}
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              Annulla Candidatura
-                            </Button>
-                          )}
 
                           {accountType === 'creator' && (app.status === 'accepted' || app.status === 'pending') && !app.submissions?.length && (
                             <Dialog open={submissionDialogOpen && selectedApplication === app.id} 
