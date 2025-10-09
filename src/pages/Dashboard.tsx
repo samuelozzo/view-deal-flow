@@ -151,12 +151,24 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      setApplications(data || []);
+      // For business users, filter out applications with approved submissions
+      let filteredData = data || [];
+      if (userType === 'business') {
+        filteredData = filteredData.filter(app => {
+          // Hide applications that have submissions with 'escrow_accepted' or 'paid' status
+          const hasApprovedSubmission = app.submissions && app.submissions.some(
+            sub => sub.status === 'escrow_accepted' || sub.status === 'paid'
+          );
+          return !hasApprovedSubmission;
+        });
+      }
 
-      // Calculate stats
-      const total = data?.length || 0;
-      const accepted = data?.filter(app => app.status === 'accepted').length || 0;
-      const pending = data?.filter(app => app.status === 'pending').length || 0;
+      setApplications(filteredData);
+
+      // Calculate stats based on filtered data
+      const total = filteredData?.length || 0;
+      const accepted = filteredData?.filter(app => app.status === 'accepted').length || 0;
+      const pending = filteredData?.filter(app => app.status === 'pending').length || 0;
       
       setStats({
         total,
