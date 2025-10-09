@@ -348,14 +348,59 @@ const AdminDashboard = () => {
       });
 
       // Update offer claimed_reward_cents (no need to fetch again, we already have currentOffer)
+      const newClaimedAmount = (currentOffer.claimed_reward_cents || 0) + earningsCents;
+      const isOfferCompleted = newClaimedAmount >= currentOffer.total_reward_cents;
+
       const { error: offerUpdateError } = await supabase
         .from("offers")
         .update({
-          claimed_reward_cents: (currentOffer.claimed_reward_cents || 0) + earningsCents,
+          claimed_reward_cents: newClaimedAmount,
+          ...(isOfferCompleted && { status: 'completed' }),
         })
         .eq("id", submission.application.offer.id);
 
       if (offerUpdateError) throw offerUpdateError;
+
+      // If offer is completed, send notifications to all involved parties
+      if (isOfferCompleted) {
+        // Get business_id from offer
+        const { data: offerData, error: offerError } = await supabase
+          .from("offers")
+          .select("business_id, title")
+          .eq("id", submission.application.offer.id)
+          .single();
+
+        if (!offerError && offerData) {
+          // Get all creators who have accepted applications for this offer
+          const { data: acceptedApps, error: appsError } = await supabase
+            .from("applications")
+            .select("creator_id")
+            .eq("offer_id", submission.application.offer.id)
+            .eq("status", "accepted");
+
+          if (!appsError && acceptedApps) {
+            // Send notification to business
+            await supabase.from("notifications").insert({
+              user_id: offerData.business_id,
+              type: "offer_completed",
+              title: "Offerta Completata! 🎉",
+              message: `La tua offerta "${offerData.title}" è stata completata con successo! Pronti per la prossima?`,
+              link: `/manage-offers`,
+            });
+
+            // Send notifications to all creators
+            const creatorNotifications = acceptedApps.map((app) => ({
+              user_id: app.creator_id,
+              type: "offer_completed",
+              title: "Offerta Completata! 🎉",
+              message: `L'offerta "${offerData.title}" è stata completata con successo! Pronti per la prossima?`,
+              link: `/dashboard`,
+            }));
+
+            await supabase.from("notifications").insert(creatorNotifications);
+          }
+        }
+      }
 
       // Send notification to creator
       await supabase.from("notifications").insert({

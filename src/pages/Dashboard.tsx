@@ -108,7 +108,8 @@ const Dashboard = () => {
               title,
               total_reward_cents,
               required_views,
-              business_id
+              business_id,
+              status
             ),
             submissions (
               id,
@@ -118,6 +119,7 @@ const Dashboard = () => {
             )
           `)
           .eq('offers.business_id', user?.id)
+          .neq('offers.status', 'completed')
           .order('created_at', { ascending: false });
       } else {
         // Creator users see their own applications
@@ -125,11 +127,12 @@ const Dashboard = () => {
           .from('applications')
           .select(`
             *,
-            offers (
+            offers!inner (
               id,
               title,
               total_reward_cents,
               required_views,
+              status,
               profiles:business_id (
                 display_name
               )
@@ -142,6 +145,7 @@ const Dashboard = () => {
             )
           `)
           .eq('creator_id', user?.id)
+          .neq('offers.status', 'completed')
           .order('created_at', { ascending: false });
       }
 

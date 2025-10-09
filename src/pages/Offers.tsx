@@ -57,6 +57,7 @@ const Offers = () => {
           )
         `)
         .eq('status', 'open')
+        .neq('status', 'completed')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

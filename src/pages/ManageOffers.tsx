@@ -49,11 +49,12 @@ const ManageOffers = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Fetch user's offers
+      // Fetch user's offers (excluding completed ones)
       const { data: offersData, error: offersError } = await supabase
         .from("offers")
         .select("*")
         .eq("business_id", session.user.id)
+        .neq("status", "completed")
         .order("created_at", { ascending: false });
 
       if (offersError) throw offersError;
