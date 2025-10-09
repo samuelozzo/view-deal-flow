@@ -274,6 +274,26 @@ const AdminDashboard = () => {
 
       if (escrowError) throw escrowError;
 
+      // Update creator wallet (add to reserved)
+      const { data: creatorWallet, error: creatorWalletFetchError } = await supabase
+        .from("wallets")
+        .select("id, reserved_cents")
+        .eq("user_id", submission.application.creator_id)
+        .single();
+
+      if (creatorWalletFetchError || !creatorWallet) {
+        throw new Error("Creator wallet non trovato");
+      }
+
+      const { error: creatorReserveError } = await supabase
+        .from("wallets")
+        .update({
+          reserved_cents: creatorWallet.reserved_cents + earningsCents,
+        })
+        .eq("id", creatorWallet.id);
+
+      if (creatorReserveError) throw creatorReserveError;
+
       // Send notification to creator
       await supabase.from("notifications").insert({
         user_id: submission.application.creator_id,
