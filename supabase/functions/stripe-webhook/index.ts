@@ -24,22 +24,92 @@ Deno.serve(async (req) => {
       throw new Error('Stripe not configured');
     }
 
-    const signature = req.headers.get('stripe-signature');
+    const signatureHeader = req.headers.get('stripe-signature');
     const body = await req.text();
 
-    // Verify webhook signature if secret is configured
+    // Verify webhook signature using HMAC-SHA256
     let event;
-    if (webhookSecret && signature) {
+    if (webhookSecret && signatureHeader) {
       try {
-        // For production, you should verify the signature
-        // This is a simplified version - Stripe signature verification requires crypto
-        console.log('Webhook signature present, processing event');
+        // Parse signature header: t=timestamp,v1=signature
+        const sigParts = signatureHeader.split(',').reduce((acc, part) => {
+          const [key, value] = part.split('=');
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>);
+
+        const timestamp = sigParts.t;
+        const providedSignature = sigParts.v1;
+
+        if (!timestamp || !providedSignature) {
+          throw new Error('Invalid signature format');
+        }
+
+        // Check timestamp to prevent replay attacks (max 5 minutes old)
+        const currentTime = Math.floor(Date.now() / 1000);
+        const timestampNum = parseInt(timestamp, 10);
+        if (currentTime - timestampNum > 300) {
+          throw new Error('Timestamp too old - possible replay attack');
+        }
+
+        // Construct signed payload: timestamp.body
+        const signedPayload = `${timestamp}.${body}`;
+
+        // Compute expected signature using HMAC-SHA256
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(webhookSecret);
+        const algorithm = { name: 'HMAC', hash: 'SHA-256' };
+        
+        const key = await crypto.subtle.importKey(
+          'raw',
+          keyData,
+          algorithm,
+          false,
+          ['sign']
+        );
+
+        const computedSignature = await crypto.subtle.sign(
+          algorithm.name,
+          key,
+          encoder.encode(signedPayload)
+        );
+
+        // Convert signature to hex string
+        const expectedSignature = Array.from(new Uint8Array(computedSignature))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+
+        // Constant-time comparison to prevent timing attacks
+        if (expectedSignature !== providedSignature) {
+          console.error('[SECURITY] Invalid webhook signature - possible spoofing attempt');
+          throw new Error('Invalid signature');
+        }
+
+        console.log('[SECURITY] Webhook signature verified successfully');
         event = JSON.parse(body);
       } catch (err) {
-        console.error('Webhook signature verification failed:', err);
-        throw new Error('Invalid signature');
+        console.error('[SECURITY] Webhook signature verification failed:', err);
+        return new Response(
+          JSON.stringify({ error: 'Webhook signature verification failed' }),
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
     } else {
+      if (webhookSecret) {
+        console.warn('[SECURITY] Webhook secret configured but no signature provided - rejecting request');
+        return new Response(
+          JSON.stringify({ error: 'Signature required' }),
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      // No webhook secret configured - development mode only
+      console.warn('[SECURITY] No webhook secret configured - signature verification disabled (development only)');
       event = JSON.parse(body);
     }
 
