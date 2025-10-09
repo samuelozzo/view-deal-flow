@@ -38,6 +38,10 @@ const AccountSettings = () => {
 
   const loadProfile = async () => {
     try {
+      // SECURITY NOTE: Loading own profile from 'profiles' table (allowed by RLS)
+      // This gives access to all profile fields including sensitive ones
+      // For viewing OTHER users, always use 'public_profiles' view
+      // See SECURITY_ARCHITECTURE.md for full explanation
       const { data, error } = await supabase
         .from('profiles')
         .select('display_name, bio, account_type')

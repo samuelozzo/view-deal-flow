@@ -32,6 +32,9 @@ const Navbar = () => {
       setIsLoggedIn(!!session);
       
       if (session?.user) {
+        // SECURITY NOTE: Querying own profile from 'profiles' table (allowed by RLS)
+        // For viewing OTHER users, use 'public_profiles' view instead
+        // See SECURITY_ARCHITECTURE.md for full explanation
         const { data: profileData } = await supabase
           .from('profiles')
           .select('account_type')

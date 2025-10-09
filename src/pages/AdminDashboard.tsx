@@ -113,7 +113,9 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      // Fetch creator and business profiles using public view for security
+      // SECURITY NOTE: Fetch creator and business profiles using public_profiles view
+      // This view filters sensitive Stripe Connect flags and platform_links
+      // See SECURITY_ARCHITECTURE.md for full explanation
       const submissionsWithProfiles = await Promise.all(
         (data || []).map(async (submission: any) => {
           const [creatorProfile, businessProfile] = await Promise.all([
