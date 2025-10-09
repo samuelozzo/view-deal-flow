@@ -153,12 +153,16 @@ const Dashboard = () => {
 
       // Filter out applications with approved submissions
       let filteredData = data || [];
+      console.log('Raw applications data:', data);
+      console.log('User type:', userType);
+      
       if (userType === 'business') {
         filteredData = filteredData.filter(app => {
           // Hide applications that have submissions with 'verified' status
           const hasApprovedSubmission = app.submissions && app.submissions.some(
             sub => sub.status === 'verified'
           );
+          console.log('Business app:', app.id, 'hasApprovedSubmission:', hasApprovedSubmission);
           return !hasApprovedSubmission;
         });
       } else if (userType === 'creator') {
@@ -167,6 +171,7 @@ const Dashboard = () => {
           const hasApprovedSubmission = app.submissions && app.submissions.some(
             sub => sub.status === 'verified'
           );
+          console.log('Creator app:', app.id, 'submissions:', app.submissions, 'hasApprovedSubmission:', hasApprovedSubmission);
           return !hasApprovedSubmission;
         });
       }
