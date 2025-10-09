@@ -196,11 +196,47 @@ const AdminDashboard = () => {
         throw new Error("Invalid views");
       }
 
+      // Get current offer data to check remaining budget
+      const { data: currentOffer, error: offerFetchError } = await supabase
+        .from("offers")
+        .select("total_reward_cents, claimed_reward_cents")
+        .eq("id", submission.application.offer.id)
+        .single();
+
+      if (offerFetchError || !currentOffer) {
+        throw new Error("Impossibile recuperare i dati dell'offerta");
+      }
+
+      // Calculate remaining budget
+      const remainingCents = currentOffer.total_reward_cents - (currentOffer.claimed_reward_cents || 0);
+
+      if (remainingCents <= 0) {
+        toast({
+          title: "Errore",
+          description: "Budget dell'offerta esaurito. Non è possibile approvare altre submission.",
+          variant: "destructive",
+        });
+        throw new Error("Budget esaurito");
+      }
+
       // Calculate earnings based on views and offer reward
       // Formula: (actual_views / required_views) * total_reward_cents
       // Cap at total_reward_cents if views exceed required
       const ratio = Math.min(views / submission.application.offer.required_views, 1);
-      const earningsCents = Math.round(submission.application.offer.total_reward_cents * ratio);
+      let earningsCents = Math.round(submission.application.offer.total_reward_cents * ratio);
+      
+      // Cap earnings to remaining budget
+      const originalEarnings = earningsCents;
+      earningsCents = Math.min(earningsCents, remainingCents);
+
+      // Warn admin if earnings were capped
+      if (earningsCents < originalEarnings) {
+        toast({
+          title: "Attenzione",
+          description: `La ricompensa è stata limitata a €${(earningsCents / 100).toFixed(2)} (budget residuo dell'offerta). Ricompensa calcolata era €${(originalEarnings / 100).toFixed(2)}.`,
+          variant: "default",
+        });
+      }
       
       // Calculate release date (14 days from now)
       const releaseDate = new Date();
@@ -311,19 +347,11 @@ const AdminDashboard = () => {
         },
       });
 
-      // Update offer claimed_reward_cents
-      const { data: currentOffer, error: offerFetchError } = await supabase
-        .from("offers")
-        .select("claimed_reward_cents")
-        .eq("id", submission.application.offer.id)
-        .single();
-
-      if (offerFetchError) throw offerFetchError;
-
+      // Update offer claimed_reward_cents (no need to fetch again, we already have currentOffer)
       const { error: offerUpdateError } = await supabase
         .from("offers")
         .update({
-          claimed_reward_cents: (currentOffer?.claimed_reward_cents || 0) + earningsCents,
+          claimed_reward_cents: (currentOffer.claimed_reward_cents || 0) + earningsCents,
         })
         .eq("id", submission.application.offer.id);
 
