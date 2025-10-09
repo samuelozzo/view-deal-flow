@@ -162,6 +162,39 @@ export type Database = {
           },
         ]
       }
+      instagram_metrics_cache: {
+        Row: {
+          cached_at: string
+          expires_at: string
+          id: string
+          media_id: string
+          media_type: string
+          permalink: string
+          user_id: string
+          views: number
+        }
+        Insert: {
+          cached_at?: string
+          expires_at?: string
+          id?: string
+          media_id: string
+          media_type: string
+          permalink: string
+          user_id: string
+          views: number
+        }
+        Update: {
+          cached_at?: string
+          expires_at?: string
+          id?: string
+          media_id?: string
+          media_type?: string
+          permalink?: string
+          user_id?: string
+          views?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -306,6 +339,9 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          instagram_access_token: string | null
+          instagram_token_expires_at: string | null
+          instagram_user_id: string | null
           platform_links: Json | null
           updated_at: string
         }
@@ -316,6 +352,9 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          instagram_access_token?: string | null
+          instagram_token_expires_at?: string | null
+          instagram_user_id?: string | null
           platform_links?: Json | null
           updated_at?: string
         }
@@ -326,6 +365,9 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          instagram_access_token?: string | null
+          instagram_token_expires_at?: string | null
+          instagram_user_id?: string | null
           platform_links?: Json | null
           updated_at?: string
         }
@@ -544,6 +586,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_instagram_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       delete_user_account: {
         Args: Record<PropertyKey, never>
         Returns: undefined
