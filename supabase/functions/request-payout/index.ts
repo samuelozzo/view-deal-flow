@@ -51,6 +51,10 @@ Deno.serve(async (req) => {
 
     console.log(`Processing payout request: ${amount_cents} cents for user ${user.id}, Stripe Connect: ${isStripeConnect}`);
 
+    if (!isStripeConnect) {
+      throw new Error('Stripe Connect must be enabled to request payouts');
+    }
+
     // Get user's wallet
     const { data: wallet, error: walletError } = await supabase
       .from('wallets')
@@ -97,7 +101,7 @@ Deno.serve(async (req) => {
       .insert({
         wallet_id: wallet.id,
         amount_cents,
-        iban: isStripeConnect ? 'STRIPE_CONNECT' : null,
+        iban: 'STRIPE_CONNECT',
         status: 'pending',
       })
       .select()
@@ -128,21 +132,101 @@ Deno.serve(async (req) => {
       },
     });
 
+    console.log(`Payout request created: ${payoutRequest.id}`);
+
+    // Process Stripe transfer immediately for Stripe Connect users
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) {
+      throw new Error('Stripe not configured');
+    }
+
+    console.log(`Creating Stripe Connect transfer for ${amount_cents} cents to account: ${profile.stripe_connect_account_id}`);
+
+    // Import Stripe
+    const Stripe = (await import('https://esm.sh/stripe@18.5.0')).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-08-27.basil',
+    });
+
+    // Create Stripe Transfer to Connected Account
+    let stripeTransferId: string;
+    try {
+      const transfer = await stripe.transfers.create({
+        amount: amount_cents,
+        currency: 'eur',
+        destination: profile.stripe_connect_account_id,
+        description: `Payout to creator - Request ID: ${payoutRequest.id}`,
+        metadata: {
+          payout_request_id: payoutRequest.id,
+          user_id: user.id,
+        },
+      });
+
+      stripeTransferId = transfer.id;
+      console.log(`✅ Stripe transfer created successfully: ${stripeTransferId}`);
+      console.log(`💶 Funds will be paid out automatically to the creator's bank account by Stripe`);
+      
+    } catch (stripeError: any) {
+      console.error('❌ Stripe transfer creation failed:', stripeError);
+      
+      // Revert wallet changes if Stripe fails
+      await supabase
+        .from('wallets')
+        .update({
+          available_cents: wallet.available_cents,
+        })
+        .eq('id', wallet.id);
+
+      // Update payout request to failed
+      await supabase
+        .from('payout_requests')
+        .update({
+          status: 'pending',
+          admin_note: `Stripe error: ${stripeError.message}`,
+        })
+        .eq('id', payoutRequest.id);
+
+      throw new Error(`Stripe transfer failed: ${stripeError.message}`);
+    }
+
+    // Update wallet transaction to completed
+    await supabase
+      .from('wallet_transactions')
+      .update({ 
+        status: 'completed',
+        metadata: {
+          stripe_connect: true,
+          stripe_transfer_id: stripeTransferId,
+        }
+      })
+      .eq('reference_type', 'payout_request')
+      .eq('reference_id', payoutRequest.id);
+
+    // Update payout request to completed
+    await supabase
+      .from('payout_requests')
+      .update({
+        status: 'completed',
+        processed_at: new Date().toISOString(),
+        admin_note: `Bonifico eseguito con successo. Stripe Transfer ID: ${stripeTransferId}`,
+      })
+      .eq('id', payoutRequest.id);
+
     // Create notification
     await supabase.from('notifications').insert({
       user_id: user.id,
-      type: 'payout_requested',
-      title: 'Richiesta Payout Inviata',
-      message: `La tua richiesta di payout di €${(amount_cents / 100).toFixed(2)} è in elaborazione.`,
+      type: 'payout_completed',
+      title: 'Prelievo Completato',
+      message: `Il tuo prelievo di €${(amount_cents / 100).toFixed(2)} è stato elaborato con successo. I fondi arriveranno sul tuo conto bancario entro 1-3 giorni lavorativi.`,
       link: '/wallet',
     });
-
-    console.log(`Payout request created: ${payoutRequest.id}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         payout_request_id: payoutRequest.id,
+        stripe_transfer_id: stripeTransferId,
+        message: 'Payout processed successfully via Stripe Connect',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
