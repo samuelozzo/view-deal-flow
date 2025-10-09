@@ -632,6 +632,17 @@ export type Database = {
           wallet_id: string
         }[]
       }
+      get_public_profile_data: {
+        Args: { profile_user_id: string }
+        Returns: {
+          account_type: Database["public"]["Enums"]["account_type"]
+          avatar_url: string
+          bio: string
+          created_at: string
+          display_name: string
+          id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
