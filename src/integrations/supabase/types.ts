@@ -339,11 +339,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
-          instagram_access_token: string | null
-          instagram_token_expires_at: string | null
-          instagram_user_id: string | null
           platform_links: Json | null
-          stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
           stripe_connect_onboarding_completed: boolean | null
           stripe_connect_payouts_enabled: boolean | null
@@ -356,11 +352,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
-          instagram_access_token?: string | null
-          instagram_token_expires_at?: string | null
-          instagram_user_id?: string | null
           platform_links?: Json | null
-          stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarding_completed?: boolean | null
           stripe_connect_payouts_enabled?: boolean | null
@@ -373,11 +365,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
-          instagram_access_token?: string | null
-          instagram_token_expires_at?: string | null
-          instagram_user_id?: string | null
           platform_links?: Json | null
-          stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarding_completed?: boolean | null
           stripe_connect_payouts_enabled?: boolean | null
