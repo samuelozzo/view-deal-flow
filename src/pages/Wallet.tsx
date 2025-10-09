@@ -431,7 +431,7 @@ const Wallet = () => {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              {userRole === "business" && (
+              {(userRole === "business" || userRole === "creator") && (
                 <Button 
                   variant="outline" 
                   onClick={handleReconcileNow}
