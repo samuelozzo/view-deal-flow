@@ -31,10 +31,14 @@ Deno.serve(async (req) => {
       throw new Error('Invalid request parameters')
     }
 
-    // Get user profile to check for Stripe Connect
+    // Get Stripe account ID using secure function
+    const { data: stripeAccountId } = await supabase
+      .rpc('get_user_stripe_account', { p_user_id: user.id })
+
+    // Get profile to check Stripe Connect status
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_connect_account_id, stripe_connect_payouts_enabled')
+      .select('stripe_connect_payouts_enabled')
       .eq('id', user.id)
       .single()
 
@@ -43,7 +47,7 @@ Deno.serve(async (req) => {
     }
 
     // For Stripe Connect users, IBAN is not needed (managed by Stripe)
-    const isStripeConnect = profile?.stripe_connect_payouts_enabled && profile?.stripe_connect_account_id
+    const isStripeConnect = profile?.stripe_connect_payouts_enabled && stripeAccountId
 
     // Get user wallet
     const { data: wallet, error: walletError } = await supabase

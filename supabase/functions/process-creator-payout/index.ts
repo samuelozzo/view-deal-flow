@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     console.log(`Processing payout request: ${payout_request_id}`);
 
-    // Get payout request with user profile for Stripe Connect account
+    // Get payout request with wallet and profile data
     const { data: payoutRequest, error: payoutError } = await supabase
       .from('payout_requests')
       .select(`
@@ -44,7 +44,6 @@ Deno.serve(async (req) => {
         wallets!inner(
           user_id,
           profiles!inner(
-            stripe_connect_account_id,
             stripe_connect_payouts_enabled
           )
         )
@@ -57,8 +56,14 @@ Deno.serve(async (req) => {
       throw new Error('Payout request not found or already processed');
     }
 
+    const walletUserId = (payoutRequest.wallets as any).user_id;
     const userProfile = (payoutRequest.wallets as any).profiles;
-    if (!userProfile.stripe_connect_account_id) {
+
+    // Get Stripe account ID using secure function
+    const { data: stripeAccountId, error: accountError } = await supabase
+      .rpc('get_user_stripe_account', { p_user_id: walletUserId });
+
+    if (accountError || !stripeAccountId) {
       throw new Error('User has not completed Stripe Connect onboarding');
     }
 
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
       throw new Error('Stripe not configured');
     }
 
-    console.log(`Creating Stripe Connect transfer for ${payoutRequest.amount_cents} cents to account: ${userProfile.stripe_connect_account_id}`);
+    console.log(`Creating Stripe Connect transfer for ${payoutRequest.amount_cents} cents to account: ${stripeAccountId}`);
 
     // Import Stripe
     const Stripe = (await import('https://esm.sh/stripe@18.5.0')).default;
@@ -97,7 +102,7 @@ Deno.serve(async (req) => {
       const transfer = await stripe.transfers.create({
         amount: payoutRequest.amount_cents,
         currency: 'eur',
-        destination: userProfile.stripe_connect_account_id,
+        destination: stripeAccountId,
         description: `Payout to creator - Request ID: ${payout_request_id}`,
         metadata: {
           payout_request_id: payout_request_id,

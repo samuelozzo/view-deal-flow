@@ -29,14 +29,11 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('stripe_connect_account_id')
-      .eq('id', user.id)
-      .single();
+    // Get Stripe account ID using secure function
+    const { data: accountId, error: accountError } = await supabase
+      .rpc('get_user_stripe_account', { p_user_id: user.id });
 
-    if (profileError || !profile.stripe_connect_account_id) {
+    if (accountError || !accountId) {
       return new Response(
         JSON.stringify({
           connected: false,
@@ -60,28 +57,27 @@ Deno.serve(async (req) => {
     });
 
     // Get account details from Stripe
-    const account = await stripe.accounts.retrieve(profile.stripe_connect_account_id);
+    const account = await stripe.accounts.retrieve(accountId);
 
     const onboardingCompleted = account.details_submitted || false;
     const chargesEnabled = account.charges_enabled || false;
     const payoutsEnabled = account.payouts_enabled || false;
 
-    // Update profile with latest status
-    await supabase
-      .from('profiles')
-      .update({
-        stripe_connect_onboarding_completed: onboardingCompleted,
-        stripe_connect_charges_enabled: chargesEnabled,
-        stripe_connect_payouts_enabled: payoutsEnabled,
-      })
-      .eq('id', user.id);
+    // Update profile status flags using secure function
+    await supabase.rpc('set_user_stripe_account', {
+      p_user_id: user.id,
+      p_account_id: accountId,
+      p_onboarding_completed: onboardingCompleted,
+      p_charges_enabled: chargesEnabled,
+      p_payouts_enabled: payoutsEnabled,
+    });
 
     console.log(`✅ Connect status for ${user.id}: onboarding=${onboardingCompleted}, charges=${chargesEnabled}, payouts=${payoutsEnabled}`);
 
     return new Response(
       JSON.stringify({
         connected: true,
-        account_id: profile.stripe_connect_account_id,
+        account_id: accountId,
         onboarding_completed: onboardingCompleted,
         charges_enabled: chargesEnabled,
         payouts_enabled: payoutsEnabled,

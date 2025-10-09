@@ -31,10 +31,14 @@ Deno.serve(async (req) => {
 
     console.log(`Creating Stripe Connect account for user: ${user.id}`);
 
-    // Get user profile
+    // Get existing Stripe account ID using secure function
+    const { data: existingAccountId } = await supabase
+      .rpc('get_user_stripe_account', { p_user_id: user.id });
+
+    // Get display name from profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_connect_account_id, display_name')
+      .select('display_name')
       .eq('id', user.id)
       .single();
 
@@ -51,7 +55,7 @@ Deno.serve(async (req) => {
       apiVersion: '2025-08-27.basil',
     });
 
-    let accountId = profile.stripe_connect_account_id;
+    let accountId = existingAccountId;
 
     // Create Stripe Connect account if not exists
     if (!accountId) {
@@ -72,11 +76,11 @@ Deno.serve(async (req) => {
 
       accountId = account.id;
 
-      // Save account ID to profile
-      await supabase
-        .from('profiles')
-        .update({ stripe_connect_account_id: accountId })
-        .eq('id', user.id);
+      // Save account ID using secure function
+      await supabase.rpc('set_user_stripe_account', {
+        p_user_id: user.id,
+        p_account_id: accountId,
+      });
 
       console.log(`✅ Created Stripe Connect account: ${accountId}`);
     } else {

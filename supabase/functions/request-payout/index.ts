@@ -35,10 +35,14 @@ Deno.serve(async (req) => {
       throw new Error('Minimum payout amount is €10.00');
     }
 
-    // Get user profile to check for Stripe Connect
+    // Get Stripe account ID using secure function
+    const { data: stripeAccountId } = await supabase
+      .rpc('get_user_stripe_account', { p_user_id: user.id });
+
+    // Get profile to check Stripe Connect status
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_connect_account_id, stripe_connect_payouts_enabled')
+      .select('stripe_connect_payouts_enabled')
       .eq('id', user.id)
       .single();
 
@@ -47,7 +51,7 @@ Deno.serve(async (req) => {
     }
 
     // For Stripe Connect users, IBAN is not needed (managed by Stripe)
-    const isStripeConnect = profile?.stripe_connect_payouts_enabled && profile?.stripe_connect_account_id;
+    const isStripeConnect = profile?.stripe_connect_payouts_enabled && stripeAccountId;
 
     console.log(`Processing payout request: ${amount_cents} cents for user ${user.id}, Stripe Connect: ${isStripeConnect}`);
 
@@ -140,7 +144,7 @@ Deno.serve(async (req) => {
       throw new Error('Stripe not configured');
     }
 
-    console.log(`Creating Stripe Connect transfer for ${amount_cents} cents to account: ${profile.stripe_connect_account_id}`);
+    console.log(`Creating Stripe Connect transfer for ${amount_cents} cents to account: ${stripeAccountId}`);
 
     // Import Stripe
     const Stripe = (await import('https://esm.sh/stripe@18.5.0')).default;
@@ -154,7 +158,7 @@ Deno.serve(async (req) => {
       const transfer = await stripe.transfers.create({
         amount: amount_cents,
         currency: 'eur',
-        destination: profile.stripe_connect_account_id,
+        destination: stripeAccountId,
         description: `Payout to creator - Request ID: ${payoutRequest.id}`,
         metadata: {
           payout_request_id: payoutRequest.id,

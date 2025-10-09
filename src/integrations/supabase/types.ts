@@ -479,6 +479,39 @@ export type Database = {
           },
         ]
       }
+      user_credentials: {
+        Row: {
+          created_at: string
+          id: string
+          instagram_access_token: string | null
+          instagram_token_expires_at: string | null
+          instagram_user_id: string | null
+          stripe_connect_account_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instagram_access_token?: string | null
+          instagram_token_expires_at?: string | null
+          instagram_user_id?: string | null
+          stripe_connect_account_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instagram_access_token?: string | null
+          instagram_token_expires_at?: string | null
+          instagram_user_id?: string | null
+          stripe_connect_account_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -643,11 +676,46 @@ export type Database = {
           id: string
         }[]
       }
+      get_user_instagram_token: {
+        Args: { p_user_id: string }
+        Returns: {
+          access_token: string
+          token_expires_at: string
+          user_id_instagram: string
+        }[]
+      }
+      get_user_stripe_account: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      set_user_instagram_token: {
+        Args: {
+          p_access_token: string
+          p_expires_at: string
+          p_instagram_user_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      set_user_stripe_account: {
+        Args: {
+          p_account_id: string
+          p_charges_enabled?: boolean
+          p_onboarding_completed?: boolean
+          p_payouts_enabled?: boolean
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      user_has_stripe_connect: {
+        Args: { p_user_id: string }
         Returns: boolean
       }
       user_owns_wallet: {
