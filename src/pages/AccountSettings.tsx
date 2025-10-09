@@ -34,8 +34,27 @@ const AccountSettings = () => {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // Check if this is a password recovery flow from context
-    if (contextIsPasswordRecovery) {
+    // Check URL hash immediately for recovery
+    const checkHash = () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      
+      console.log('AccountSettings - checking hash:', { type, hasToken: !!accessToken });
+      
+      if (type === 'recovery' || (accessToken && location.pathname === '/account-settings')) {
+        setIsPasswordRecovery(true);
+        toast.info("Imposta la tua nuova password");
+        return true;
+      }
+      return false;
+    };
+    
+    // Check immediately
+    const isRecovery = checkHash();
+    
+    // Also check context
+    if (!isRecovery && contextIsPasswordRecovery) {
       setIsPasswordRecovery(true);
       toast.info("Imposta la tua nuova password");
     }
@@ -43,7 +62,7 @@ const AccountSettings = () => {
     if (user) {
       loadProfile();
     }
-  }, [user, contextIsPasswordRecovery]);
+  }, [user, contextIsPasswordRecovery, location]);
 
   const loadProfile = async () => {
     try {

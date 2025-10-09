@@ -31,16 +31,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Check URL hash for recovery tokens on mount
+    const checkRecoveryToken = () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const type = hashParams.get('type');
+      
+      console.log('Hash params - type:', type, 'access_token present:', !!accessToken);
+      
+      if (type === 'recovery' || (accessToken && window.location.pathname === '/account-settings')) {
+        setIsPasswordRecovery(true);
+        console.log('Password recovery detected');
+      }
+    };
+    
+    checkRecoveryToken();
+    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth event:', event);
         
-        // Check if this is a password recovery event
         if (event === 'PASSWORD_RECOVERY') {
           setIsPasswordRecovery(true);
-        } else if (event === 'SIGNED_IN' && !isPasswordRecovery) {
-          setIsPasswordRecovery(false);
         }
         
         setSession(session);
@@ -49,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
