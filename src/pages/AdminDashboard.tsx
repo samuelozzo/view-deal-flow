@@ -453,32 +453,33 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex justify-end">
-          <Button 
-            onClick={testEscrowRelease} 
-            disabled={testingEscrow}
-            variant="outline"
-            size="sm"
-          >
-            {testingEscrow ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Test in corso...
-              </>
-            ) : (
-              <>
-                <Clock className="h-4 w-4 mr-2" />
-                Test Rilascio Escrow
-              </>
-            )}
-          </Button>
-        </div>
         <Card>
           <CardHeader>
-            <CardTitle>Dashboard Amministratore</CardTitle>
-            <CardDescription>
-              Gestisci tutte le submission video e controlla la piattaforma
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Dashboard Amministratore</CardTitle>
+                <CardDescription>
+                  Gestisci tutte le submission video e controlla la piattaforma
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={testEscrowRelease} 
+                disabled={testingEscrow}
+                variant="outline"
+              >
+                {testingEscrow ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Test in corso...
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Test Rilascio Escrow
+                  </>
+                )}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
