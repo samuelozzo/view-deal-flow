@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,12 @@ import { Loader2, KeyRound, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AccountSettings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -29,8 +31,18 @@ const AccountSettings = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
+    // Check if this is a password recovery flow
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery') {
+      setIsPasswordRecovery(true);
+      toast.info("Imposta la tua nuova password");
+    }
+    
     if (user) {
       loadProfile();
     }
@@ -99,7 +111,8 @@ const AccountSettings = () => {
       return;
     }
 
-    if (currentPassword === newPassword) {
+    // Only check current password if not in recovery mode
+    if (!isPasswordRecovery && currentPassword === newPassword) {
       toast.error("La nuova password deve essere diversa da quella attuale");
       return;
     }
@@ -107,16 +120,18 @@ const AccountSettings = () => {
     setChangingPassword(true);
 
     try {
-      // First verify current password by trying to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || "",
-        password: currentPassword,
-      });
+      // If not in recovery mode, verify current password first
+      if (!isPasswordRecovery) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user?.email || "",
+          password: currentPassword,
+        });
 
-      if (signInError) {
-        toast.error("Password attuale non corretta");
-        setChangingPassword(false);
-        return;
+        if (signInError) {
+          toast.error("Password attuale non corretta");
+          setChangingPassword(false);
+          return;
+        }
       }
 
       // Update password
@@ -128,10 +143,14 @@ const AccountSettings = () => {
 
       toast.success("Password modificata con successo!");
       
-      // Clear password fields
+      // Clear password fields and recovery state
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
+      setIsPasswordRecovery(false);
+      
+      // Clear the hash from URL
+      window.history.replaceState(null, '', window.location.pathname);
     } catch (error: any) {
       console.error("Error changing password:", error);
       toast.error(error.message || "Errore nella modifica della password");
@@ -289,25 +308,36 @@ const AccountSettings = () => {
               <CardTitle>Sicurezza</CardTitle>
             </div>
             <CardDescription>
-              Modifica la tua password
+              {isPasswordRecovery ? "Imposta la tua nuova password" : "Modifica la tua password"}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isPasswordRecovery && (
+              <Alert className="mb-4">
+                <AlertDescription>
+                  Stai reimpostando la tua password. Inserisci solo la nuova password.
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handlePasswordChange} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Password Attuale</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Inserisci la password attuale"
-                  required
-                  disabled={changingPassword}
-                />
-              </div>
+              {!isPasswordRecovery && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Password Attuale</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Inserisci la password attuale"
+                      required
+                      disabled={changingPassword}
+                    />
+                  </div>
 
-              <Separator />
+                  <Separator />
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="new-password">Nuova Password</Label>
@@ -339,7 +369,12 @@ const AccountSettings = () => {
 
               <Button 
                 type="submit" 
-                disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+                disabled={
+                  changingPassword || 
+                  (!isPasswordRecovery && !currentPassword) || 
+                  !newPassword || 
+                  !confirmNewPassword
+                }
                 className="w-full"
               >
                 {changingPassword ? (
@@ -348,7 +383,7 @@ const AccountSettings = () => {
                     Modifica in corso...
                   </>
                 ) : (
-                  "Modifica Password"
+                  isPasswordRecovery ? "Imposta Nuova Password" : "Modifica Password"
                 )}
               </Button>
             </form>
