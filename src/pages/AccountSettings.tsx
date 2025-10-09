@@ -42,9 +42,10 @@ const AccountSettings = () => {
       
       console.log('AccountSettings - checking hash:', { type, hasToken: !!accessToken });
       
-      if (type === 'recovery' || (accessToken && location.pathname === '/account-settings')) {
+      if (type === 'recovery') {
         setIsPasswordRecovery(true);
-        toast.info("Imposta la tua nuova password");
+        toast.info("Per motivi di sicurezza, devi reimpostare la tua password");
+        setLoading(false);
         return true;
       }
       return false;
@@ -56,11 +57,16 @@ const AccountSettings = () => {
     // Also check context
     if (!isRecovery && contextIsPasswordRecovery) {
       setIsPasswordRecovery(true);
-      toast.info("Imposta la tua nuova password");
+      toast.info("Per motivi di sicurezza, devi reimpostare la tua password");
+      setLoading(false);
     }
     
-    if (user) {
+    // Only load profile if user is logged in and NOT in recovery mode
+    if (user && !isRecovery && !contextIsPasswordRecovery) {
       loadProfile();
+    } else if (isRecovery || contextIsPasswordRecovery) {
+      // In recovery mode, we don't need profile data
+      setLoading(false);
     }
   }, [user, contextIsPasswordRecovery, location]);
 
@@ -150,14 +156,14 @@ const AccountSettings = () => {
         }
       }
 
-      // Update password
+      // Update password - this works with recovery token without being logged in
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (updateError) throw updateError;
 
-      toast.success("Password modificata con successo!");
+      toast.success("Password reimpostata con successo! Ora puoi accedere con la nuova password.");
       
       // Clear password fields and recovery state
       setCurrentPassword("");
@@ -167,6 +173,11 @@ const AccountSettings = () => {
       
       // Clear the hash from URL
       window.history.replaceState(null, '', window.location.pathname);
+      
+      // Redirect to auth page after password reset
+      setTimeout(() => {
+        navigate("/auth");
+      }, 2000);
     } catch (error: any) {
       console.error("Error changing password:", error);
       toast.error(error.message || "Errore nella modifica della password");
@@ -209,6 +220,85 @@ const AccountSettings = () => {
         <Navbar />
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // If in recovery mode, show only password reset form
+  if (isPasswordRecovery) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">Reimposta Password</h1>
+            <p className="text-muted-foreground">Per motivi di sicurezza, devi reimpostare la tua password prima di accedere</p>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-primary" />
+                <CardTitle>Nuova Password</CardTitle>
+              </div>
+              <CardDescription>
+                Inserisci una nuova password per il tuo account
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Alert className="mb-4">
+                <AlertDescription>
+                  🔒 Per la tua sicurezza, devi cambiare la password. Non sarai loggato fino a quando non completi questo passaggio.
+                </AlertDescription>
+              </Alert>
+              <form onSubmit={handlePasswordChange} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nuova Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Almeno 6 caratteri"
+                    minLength={6}
+                    required
+                    disabled={changingPassword}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password">Conferma Nuova Password</Label>
+                  <Input
+                    id="confirm-new-password"
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Reinserisci la nuova password"
+                    minLength={6}
+                    required
+                    disabled={changingPassword}
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={changingPassword || !newPassword || !confirmNewPassword}
+                  className="w-full"
+                >
+                  {changingPassword ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Reimpostazione in corso...
+                    </>
+                  ) : (
+                    "Reimposta Password"
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -328,13 +418,6 @@ const AccountSettings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isPasswordRecovery && (
-              <Alert className="mb-4">
-                <AlertDescription>
-                  Stai reimpostando la tua password. Inserisci solo la nuova password.
-                </AlertDescription>
-              </Alert>
-            )}
             <form onSubmit={handlePasswordChange} className="space-y-6">
               {!isPasswordRecovery && (
                 <>

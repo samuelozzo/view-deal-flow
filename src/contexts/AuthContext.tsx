@@ -32,16 +32,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Check URL hash for recovery tokens on mount
-    const checkRecoveryToken = () => {
+    const checkRecoveryToken = async () => {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const type = hashParams.get('type');
       
       console.log('Hash params - type:', type, 'access_token present:', !!accessToken);
       
-      if (type === 'recovery' || (accessToken && window.location.pathname === '/account-settings')) {
+      if (type === 'recovery') {
         setIsPasswordRecovery(true);
-        console.log('Password recovery detected');
+        console.log('Password recovery detected - signing out any existing session');
+        
+        // SECURITY: Sign out immediately if user was auto-logged in
+        // This prevents accessing the account without changing password
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
       }
     };
     
@@ -49,11 +55,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth event:', event);
         
         if (event === 'PASSWORD_RECOVERY') {
           setIsPasswordRecovery(true);
+          // SECURITY: Sign out to prevent unauthorized access
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
         }
         
         setSession(session);
@@ -64,8 +76,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      // Don't set session if we're in recovery mode
+      if (!isPasswordRecovery) {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
       setLoading(false);
     });
 
