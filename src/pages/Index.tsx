@@ -171,7 +171,7 @@ const Index = () => {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg" />
-                <span className="text-xl font-bold">weasydeal</span>
+                <span className="text-xl font-bold">WeasyDeal</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 {t("heroDescription")}
