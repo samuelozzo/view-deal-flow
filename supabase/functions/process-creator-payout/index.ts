@@ -65,16 +65,64 @@ Deno.serve(async (req) => {
       throw new Error('Stripe not configured');
     }
 
-    // Create Stripe Payout (simplified - in production use Stripe Connect)
-    // For now, we'll mark as completed and log
-    console.log(`Would create Stripe payout for ${payoutRequest.amount_cents} cents to ${payoutRequest.iban}`);
+    console.log(`Creating REAL Stripe payout for ${payoutRequest.amount_cents} cents to IBAN: ${payoutRequest.iban}`);
 
-    // In a real implementation with Stripe Connect:
-    // 1. Create a transfer to the connected account
-    // 2. Or create a payout to their bank account
-    
-    // For this demo, we'll simulate successful payout
-    const payoutId = `payout_${Date.now()}`;
+    // Import Stripe
+    const Stripe = (await import('https://esm.sh/stripe@18.5.0')).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-08-27.basil',
+    });
+
+    // Create REAL Stripe Payout to IBAN (SEPA)
+    let stripePayoutId: string;
+    try {
+      const payout = await stripe.payouts.create({
+        amount: payoutRequest.amount_cents,
+        currency: 'eur',
+        method: 'instant', // or 'standard' for slower but free
+        destination: payoutRequest.iban,
+        description: `Payout to creator - Request ID: ${payout_request_id}`,
+        metadata: {
+          payout_request_id: payout_request_id,
+          user_id: payoutRequest.wallets.user_id,
+        },
+      });
+
+      stripePayoutId = payout.id;
+      console.log(`✅ Stripe payout created successfully: ${stripePayoutId}`);
+      
+    } catch (stripeError: any) {
+      console.error('❌ Stripe payout creation failed:', stripeError);
+      
+      // Revert wallet changes if Stripe fails
+      await supabase
+        .from('wallets')
+        .update({
+          available_cents: supabase.rpc('increment', { x: payoutRequest.amount_cents }),
+          reserved_cents: supabase.rpc('increment', { x: -payoutRequest.amount_cents }),
+        })
+        .eq('id', payoutRequest.wallet_id);
+
+      // Update payout request to failed
+      await supabase
+        .from('payout_requests')
+        .update({
+          status: 'pending',
+          admin_note: `Stripe error: ${stripeError.message}`,
+        })
+        .eq('id', payout_request_id);
+
+      throw new Error(`Stripe payout failed: ${stripeError.message}`);
+    }
+
+    const payoutId = stripePayoutId;
+
+    // Update wallet transaction to completed
+    await supabase
+      .from('wallet_transactions')
+      .update({ status: 'completed' })
+      .eq('reference_type', 'payout_request')
+      .eq('reference_id', payout_request_id);
 
     // Update payout request
     const { error: updateError } = await supabase
@@ -82,7 +130,7 @@ Deno.serve(async (req) => {
       .update({
         status: 'completed',
         processed_at: new Date().toISOString(),
-        admin_note: `Processed by admin. Stripe payout: ${payoutId}`,
+        admin_note: `Bonifico eseguito con successo. Stripe Payout ID: ${payoutId}`,
       })
       .eq('id', payout_request_id);
 
