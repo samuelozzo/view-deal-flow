@@ -36,16 +36,34 @@ Deno.serve(async (req) => {
 
     console.log(`Processing payout request: ${payout_request_id}`);
 
-    // Get payout request
+    // Get payout request with user profile for Stripe Connect account
     const { data: payoutRequest, error: payoutError } = await supabase
       .from('payout_requests')
-      .select('*, wallets!inner(user_id)')
+      .select(`
+        *,
+        wallets!inner(
+          user_id,
+          profiles!inner(
+            stripe_connect_account_id,
+            stripe_connect_payouts_enabled
+          )
+        )
+      `)
       .eq('id', payout_request_id)
       .eq('status', 'pending')
       .single();
 
     if (payoutError || !payoutRequest) {
       throw new Error('Payout request not found or already processed');
+    }
+
+    const userProfile = (payoutRequest.wallets as any).profiles;
+    if (!userProfile.stripe_connect_account_id) {
+      throw new Error('User has not completed Stripe Connect onboarding');
+    }
+
+    if (!userProfile.stripe_connect_payouts_enabled) {
+      throw new Error('Stripe Connect payouts not enabled for this user');
     }
 
     // Verify user is admin
@@ -65,7 +83,7 @@ Deno.serve(async (req) => {
       throw new Error('Stripe not configured');
     }
 
-    console.log(`Creating REAL Stripe payout for ${payoutRequest.amount_cents} cents to IBAN: ${payoutRequest.iban}`);
+    console.log(`Creating Stripe Connect transfer for ${payoutRequest.amount_cents} cents to account: ${userProfile.stripe_connect_account_id}`);
 
     // Import Stripe
     const Stripe = (await import('https://esm.sh/stripe@18.5.0')).default;
@@ -73,26 +91,26 @@ Deno.serve(async (req) => {
       apiVersion: '2025-08-27.basil',
     });
 
-    // Create REAL Stripe Payout to IBAN (SEPA)
-    let stripePayoutId: string;
+    // Create Stripe Transfer to Connected Account
+    let stripeTransferId: string;
     try {
-      const payout = await stripe.payouts.create({
+      const transfer = await stripe.transfers.create({
         amount: payoutRequest.amount_cents,
         currency: 'eur',
-        method: 'instant', // or 'standard' for slower but free
-        destination: payoutRequest.iban,
+        destination: userProfile.stripe_connect_account_id,
         description: `Payout to creator - Request ID: ${payout_request_id}`,
         metadata: {
           payout_request_id: payout_request_id,
-          user_id: payoutRequest.wallets.user_id,
+          user_id: (payoutRequest.wallets as any).user_id,
         },
       });
 
-      stripePayoutId = payout.id;
-      console.log(`✅ Stripe payout created successfully: ${stripePayoutId}`);
+      stripeTransferId = transfer.id;
+      console.log(`✅ Stripe transfer created successfully: ${stripeTransferId}`);
+      console.log(`💶 Funds will be paid out automatically to the creator's bank account by Stripe`);
       
     } catch (stripeError: any) {
-      console.error('❌ Stripe payout creation failed:', stripeError);
+      console.error('❌ Stripe transfer creation failed:', stripeError);
       
       // Revert wallet changes if Stripe fails
       await supabase
@@ -112,10 +130,10 @@ Deno.serve(async (req) => {
         })
         .eq('id', payout_request_id);
 
-      throw new Error(`Stripe payout failed: ${stripeError.message}`);
+      throw new Error(`Stripe transfer failed: ${stripeError.message}`);
     }
 
-    const payoutId = stripePayoutId;
+    const payoutId = stripeTransferId;
 
     // Update wallet transaction to completed
     await supabase
@@ -141,10 +159,10 @@ Deno.serve(async (req) => {
 
     // Create notification
     await supabase.from('notifications').insert({
-      user_id: payoutRequest.wallets.user_id,
+      user_id: (payoutRequest.wallets as any).user_id,
       type: 'payout_completed',
       title: 'Prelievo Completato',
-      message: `Il tuo prelievo di €${(payoutRequest.amount_cents / 100).toFixed(2)} è stato elaborato con successo.`,
+      message: `Il tuo prelievo di €${(payoutRequest.amount_cents / 100).toFixed(2)} è stato elaborato con successo. I fondi arriveranno sul tuo conto bancario entro 1-3 giorni lavorativi.`,
       link: '/wallet',
     });
 

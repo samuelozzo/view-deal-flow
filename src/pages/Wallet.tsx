@@ -58,6 +58,14 @@ const Wallet = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [reconcileProcessing, setReconcileProcessing] = useState(false);
 
+  // Stripe Connect state
+  const [connectStatus, setConnectStatus] = useState({
+    connected: false,
+    onboarding_completed: false,
+    payouts_enabled: false,
+  });
+  const [connectLoading, setConnectLoading] = useState(false);
+
   useEffect(() => {
     if (!user) {
       navigate("/auth");
@@ -99,6 +107,28 @@ const Wallet = () => {
       supabase.removeChannel(channel);
     };
   }, [user, navigate]);
+
+  // Check Connect status when userRole changes to creator
+  useEffect(() => {
+    if (userRole === 'creator') {
+      checkConnectStatus();
+      
+      // Check for successful Connect onboarding from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('connect') === 'success') {
+        toast({
+          title: "Onboarding Completato",
+          description: "Verifica dello stato Stripe Connect in corso...",
+        });
+        // Clear URL params
+        window.history.replaceState({}, '', '/wallet');
+        // Check status after a delay
+        setTimeout(() => {
+          checkConnectStatus();
+        }, 2000);
+      }
+    }
+  }, [userRole]);
 
   const fetchWalletData = async () => {
     try {
@@ -146,11 +176,75 @@ const Wallet = () => {
     }
   };
 
+  const checkConnectStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-connect-status');
+      
+      if (error) {
+        console.error('Error checking Connect status:', error);
+        return;
+      }
+
+      if (data) {
+        setConnectStatus({
+          connected: data.connected || false,
+          onboarding_completed: data.onboarding_completed || false,
+          payouts_enabled: data.payouts_enabled || false,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking Connect status:', error);
+    }
+  };
+
+  const startConnectOnboarding = async () => {
+    setConnectLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-connect-account');
+      
+      if (error) throw error;
+
+      if (data?.onboarding_url) {
+        // Open Stripe Connect onboarding in new tab
+        window.open(data.onboarding_url, '_blank');
+        
+        toast({
+          title: "Onboarding Avviato",
+          description: "Completa il processo nella nuova finestra per abilitare i prelievi automatici.",
+        });
+
+        // Check status again after a delay
+        setTimeout(() => {
+          checkConnectStatus();
+        }, 5000);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile avviare l'onboarding Stripe.",
+        variant: "destructive",
+      });
+    } finally {
+      setConnectLoading(false);
+    }
+  };
+
   const handlePayout = async () => {
     if (!wallet || !payoutAmount || !payoutIban) {
       toast({
         title: "Errore",
         description: "Compila tutti i campi.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if Stripe Connect is completed
+    if (!connectStatus.payouts_enabled) {
+      toast({
+        title: "Completa l'Onboarding",
+        description: "Devi completare l'onboarding Stripe Connect per abilitare i prelievi automatici.",
         variant: "destructive",
       });
       return;
@@ -441,6 +535,43 @@ const Wallet = () => {
             </div>
 
             <div className="flex gap-2 flex-wrap">
+              {userRole === "creator" && !connectStatus.payouts_enabled && (
+                <Card className="w-full border-orange-500/50 bg-orange-500/5">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-2">Abilita Prelievi Automatici</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Completa l'onboarding Stripe Connect per ricevere i tuoi guadagni direttamente sul tuo conto bancario in 1-3 giorni lavorativi.
+                        </p>
+                        <Button 
+                          onClick={startConnectOnboarding}
+                          disabled={connectLoading}
+                        >
+                          {connectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          Avvia Onboarding Stripe
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {userRole === "creator" && connectStatus.payouts_enabled && (
+                <Card className="w-full border-green-500/50 bg-green-500/5">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="default" className="bg-green-500">
+                        ✓ Stripe Connect Attivo
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        I prelievi saranno elaborati automaticamente
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {(userRole === "business" || userRole === "creator") && (
                 <Button 
                   variant="outline" 
@@ -464,42 +595,62 @@ const Wallet = () => {
                     <DialogHeader>
                       <DialogTitle>Richiedi Prelievo</DialogTitle>
                       <DialogDescription>
-                        Importo minimo: €10. I fondi verranno trasferiti sul tuo conto entro 3-5 giorni lavorativi.
+                        {connectStatus.payouts_enabled 
+                          ? "I fondi verranno trasferiti automaticamente sul tuo conto bancario entro 1-3 giorni lavorativi."
+                          : "Completa l'onboarding Stripe Connect per abilitare i prelievi automatici."
+                        }
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Importo (€)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="10"
-                          value={payoutAmount}
-                          onChange={(e) => setPayoutAmount(e.target.value)}
-                          placeholder="10.00"
-                        />
+                    {!connectStatus.payouts_enabled ? (
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Prima di richiedere un prelievo, devi completare l'onboarding Stripe Connect.
+                        </p>
+                        <Button onClick={startConnectOnboarding} disabled={connectLoading}>
+                          {connectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          Avvia Onboarding
+                        </Button>
                       </div>
-                      <div className="space-y-2">
-                        <Label>IBAN</Label>
-                        <Input
-                          value={payoutIban}
-                          onChange={(e) => setPayoutIban(e.target.value)}
-                          placeholder="IT00X0000000000000000000000"
-                        />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Saldo disponibile: €{(wallet.available_cents / 100).toFixed(2)}
-                      </p>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setPayoutOpen(false)}>
-                        Annulla
-                      </Button>
-                      <Button onClick={handlePayout} disabled={payoutProcessing}>
-                        {payoutProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Richiedi Prelievo
-                      </Button>
-                    </DialogFooter>
+                    ) : (
+                      <>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Importo (€)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="10"
+                              value={payoutAmount}
+                              onChange={(e) => setPayoutAmount(e.target.value)}
+                              placeholder="10.00"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>IBAN (solo per riferimento)</Label>
+                            <Input
+                              value={payoutIban}
+                              onChange={(e) => setPayoutIban(e.target.value)}
+                              placeholder="IT00X0000000000000000000000"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Il bonifico sarà inviato all'IBAN configurato nel tuo account Stripe Connect
+                            </p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Saldo disponibile: €{(wallet.available_cents / 100).toFixed(2)}
+                          </p>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setPayoutOpen(false)}>
+                            Annulla
+                          </Button>
+                          <Button onClick={handlePayout} disabled={payoutProcessing}>
+                            {payoutProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Richiedi Prelievo
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    )}
                   </DialogContent>
                 </Dialog>
               )}

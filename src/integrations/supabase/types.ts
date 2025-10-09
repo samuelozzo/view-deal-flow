@@ -343,6 +343,10 @@ export type Database = {
           instagram_token_expires_at: string | null
           instagram_user_id: string | null
           platform_links: Json | null
+          stripe_connect_account_id: string | null
+          stripe_connect_charges_enabled: boolean | null
+          stripe_connect_onboarding_completed: boolean | null
+          stripe_connect_payouts_enabled: boolean | null
           updated_at: string
         }
         Insert: {
@@ -356,6 +360,10 @@ export type Database = {
           instagram_token_expires_at?: string | null
           instagram_user_id?: string | null
           platform_links?: Json | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_payouts_enabled?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -369,6 +377,10 @@ export type Database = {
           instagram_token_expires_at?: string | null
           instagram_user_id?: string | null
           platform_links?: Json | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_onboarding_completed?: boolean | null
+          stripe_connect_payouts_enabled?: boolean | null
           updated_at?: string
         }
         Relationships: []
