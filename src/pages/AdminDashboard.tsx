@@ -294,6 +294,21 @@ const AdminDashboard = () => {
 
       if (creatorReserveError) throw creatorReserveError;
 
+      // Create wallet transaction for creator (escrow reserve)
+      await supabase.from("wallet_transactions").insert({
+        wallet_id: creatorWallet.id,
+        type: "escrow_reserve",
+        direction: "in",
+        amount_cents: earningsCents,
+        status: "completed",
+        reference_type: "submission",
+        reference_id: submission.id,
+        metadata: {
+          offer_id: submission.application.offer.id,
+          escrow_release_date: releaseDate.toISOString(),
+        },
+      });
+
       // Send notification to creator
       await supabase.from("notifications").insert({
         user_id: submission.application.creator_id,

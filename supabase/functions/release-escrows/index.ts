@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
         // Get creator wallet
         const { data: creatorWallet, error: walletError } = await supabase
           .from('wallets')
-          .select('id, available_cents')
+          .select('id, available_cents, reserved_cents')
           .eq('user_id', escrow.creator_id)
           .single()
 
@@ -102,11 +102,12 @@ Deno.serve(async (req) => {
         }
 
         // Start transaction-like operations
-        // 1. Credit creator wallet
+        // 1. Credit creator wallet and unreserve
         const { error: updateCreatorError } = await supabase
           .from('wallets')
           .update({
-            available_cents: creatorWallet.available_cents + escrow.amount_cents
+            available_cents: creatorWallet.available_cents + escrow.amount_cents,
+            reserved_cents: Math.max(0, creatorWallet.reserved_cents - escrow.amount_cents)
           })
           .eq('id', creatorWallet.id)
 
