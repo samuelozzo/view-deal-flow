@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Headphones } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
@@ -39,6 +42,10 @@ const ManageOffers = () => {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<Offer | null>(null);
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
+  const [selectedOfferForSupport, setSelectedOfferForSupport] = useState<Offer | null>(null);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [sendingSupport, setSendingSupport] = useState(false);
 
   useEffect(() => {
     loadOffers();
@@ -160,6 +167,58 @@ const ManageOffers = () => {
     return <Badge variant={variants[status] || "default"}>{status}</Badge>;
   };
 
+  const openSupportDialog = (offer: Offer) => {
+    setSelectedOfferForSupport(offer);
+    setSupportDialogOpen(true);
+    setSupportMessage("");
+  };
+
+  const handleSendSupport = async () => {
+    if (!selectedOfferForSupport || !supportMessage.trim()) {
+      toast({
+        title: "Errore",
+        description: "Inserisci un messaggio per l'assistenza",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingSupport(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non autenticato");
+
+      const { error } = await supabase.functions.invoke('send-support-email', {
+        body: {
+          offer_id: selectedOfferForSupport.id,
+          offer_title: selectedOfferForSupport.title,
+          message: supportMessage,
+          user_email: session.user.email,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Messaggio inviato",
+        description: "Il team di assistenza ti risponderà al più presto",
+      });
+
+      setSupportDialogOpen(false);
+      setSupportMessage("");
+      setSelectedOfferForSupport(null);
+    } catch (error: any) {
+      console.error("Error sending support message:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile inviare il messaggio all'assistenza",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingSupport(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -230,6 +289,14 @@ const ManageOffers = () => {
                           <Button
                             variant="outline"
                             size="icon"
+                            onClick={() => openSupportDialog(offer)}
+                            title="Contatta assistenza"
+                          >
+                            <Headphones className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => navigate(`/edit-offer/${offer.id}`)}
                             disabled={offer.has_active_applications}
                             title={
@@ -281,6 +348,37 @@ const ManageOffers = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Contatta Assistenza</DialogTitle>
+            <DialogDescription>
+              Descrivi il problema relativo all'offerta "{selectedOfferForSupport?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="support-message">Messaggio</Label>
+              <Textarea
+                id="support-message"
+                placeholder="Descrivi il problema che stai riscontrando con questa offerta..."
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                rows={6}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSupportDialogOpen(false)}>
+              Annulla
+            </Button>
+            <Button onClick={handleSendSupport} disabled={sendingSupport}>
+              {sendingSupport ? "Invio..." : "Invia Richiesta"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
