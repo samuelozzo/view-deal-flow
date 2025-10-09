@@ -455,17 +455,18 @@ const AdminDashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Dashboard Amministratore</CardTitle>
-                <CardDescription>
-                  Gestisci tutte le submission video e controlla la piattaforma
-                </CardDescription>
-              </div>
+            <CardTitle>Dashboard Amministratore</CardTitle>
+            <CardDescription>
+              Gestisci tutte le submission video e controlla la piattaforma
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 flex justify-end">
               <Button 
                 onClick={testEscrowRelease} 
                 disabled={testingEscrow}
-                variant="outline"
+                variant="default"
+                size="sm"
               >
                 {testingEscrow ? (
                   <>
@@ -480,8 +481,6 @@ const AdminDashboard = () => {
                 )}
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
