@@ -471,12 +471,12 @@ const AdminDashboard = () => {
                 {testingEscrow ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Test in corso...
+                    Rilascio in corso...
                   </>
                 ) : (
                   <>
                     <Clock className="h-4 w-4 mr-2" />
-                    Test Rilascio Escrow
+                    Rilascio Escrow
                   </>
                 )}
               </Button>
