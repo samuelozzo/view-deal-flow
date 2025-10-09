@@ -231,10 +231,10 @@ const Wallet = () => {
   };
 
   const handlePayout = async () => {
-    if (!wallet || !payoutAmount || !payoutIban) {
+    if (!wallet || !payoutAmount) {
       toast({
         title: "Errore",
-        description: "Compila tutti i campi.",
+        description: "Inserisci un importo valido.",
         variant: "destructive",
       });
       return;
@@ -276,7 +276,6 @@ const Wallet = () => {
       const { data, error } = await supabase.functions.invoke("request-payout", {
         body: {
           amount_cents: amountCents,
-          iban: payoutIban,
         },
       });
 
@@ -658,15 +657,9 @@ const Wallet = () => {
                               placeholder="10.00"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <Label>IBAN (solo per riferimento)</Label>
-                            <Input
-                              value={payoutIban}
-                              onChange={(e) => setPayoutIban(e.target.value)}
-                              placeholder="IT00X0000000000000000000000"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Il bonifico sarà inviato all'IBAN configurato nel tuo account Stripe Connect
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                              ✓ I fondi saranno trasferiti automaticamente al conto bancario configurato nel tuo account Stripe Connect
                             </p>
                           </div>
                           <p className="text-sm text-muted-foreground">

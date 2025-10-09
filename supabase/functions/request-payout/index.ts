@@ -29,17 +29,27 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { amount_cents, iban } = await req.json();
+    const { amount_cents } = await req.json();
 
     if (!amount_cents || amount_cents < 1000) {
       throw new Error('Minimum payout amount is €10.00');
     }
 
-    if (!iban || iban.trim().length === 0) {
-      throw new Error('IBAN is required');
+    // Get user profile to check for Stripe Connect
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('stripe_connect_account_id, stripe_connect_payouts_enabled')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      throw new Error('Failed to fetch user profile');
     }
 
-    console.log(`Processing payout request: ${amount_cents} cents for user ${user.id}`);
+    // For Stripe Connect users, IBAN is not needed (managed by Stripe)
+    const isStripeConnect = profile?.stripe_connect_payouts_enabled && profile?.stripe_connect_account_id;
+
+    console.log(`Processing payout request: ${amount_cents} cents for user ${user.id}, Stripe Connect: ${isStripeConnect}`);
 
     // Get user's wallet
     const { data: wallet, error: walletError } = await supabase
@@ -87,7 +97,7 @@ Deno.serve(async (req) => {
       .insert({
         wallet_id: wallet.id,
         amount_cents,
-        iban: iban.trim(),
+        iban: isStripeConnect ? 'STRIPE_CONNECT' : null,
         status: 'pending',
       })
       .select()
@@ -114,7 +124,7 @@ Deno.serve(async (req) => {
       reference_type: 'payout_request',
       reference_id: payoutRequest.id,
       metadata: {
-        iban: iban.substring(0, 4) + '****' + iban.substring(iban.length - 4),
+        stripe_connect: isStripeConnect,
       },
     });
 
