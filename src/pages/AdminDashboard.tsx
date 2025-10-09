@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, ExternalLink, Loader2, Clock } from "lucide-react";
+import { CheckCircle, XCircle, ExternalLink, Loader2, Clock, Zap } from "lucide-react";
 
 interface SubmissionWithDetails {
   id: string;
@@ -52,6 +52,7 @@ const AdminDashboard = () => {
   const [actualViews, setActualViews] = useState("");
   const [processing, setProcessing] = useState(false);
   const [testingEscrow, setTestingEscrow] = useState(false);
+  const [forcingEscrow, setForcingEscrow] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminRole();
@@ -444,6 +445,88 @@ const AdminDashboard = () => {
     }
   };
 
+  const forceReleaseEscrow = async (submissionId: string) => {
+    setForcingEscrow(submissionId);
+    try {
+      // Find the escrow for this submission
+      const { data: escrow, error: escrowError } = await supabase
+        .from("escrow_transactions")
+        .select("id, scheduled_release_at")
+        .eq("submission_id", submissionId)
+        .eq("status", "funded")
+        .maybeSingle();
+
+      if (escrowError) {
+        console.error("Errore nel recupero escrow:", escrowError);
+        toast({
+          title: "Errore",
+          description: "Impossibile trovare l'escrow per questa submission",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!escrow) {
+        toast({
+          title: "Nessun escrow",
+          description: "Non esiste un escrow attivo per questa submission",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update scheduled_release_at to now to make it eligible for release
+      const { error: updateError } = await supabase
+        .from("escrow_transactions")
+        .update({ scheduled_release_at: new Date().toISOString() })
+        .eq("id", escrow.id);
+
+      if (updateError) {
+        console.error("Errore nell'aggiornamento escrow:", updateError);
+        toast({
+          title: "Errore",
+          description: "Impossibile aggiornare l'escrow",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Call release-escrows function to process it
+      const { data, error } = await supabase.functions.invoke('release-escrows', {
+        body: {}
+      });
+
+      if (error) {
+        console.error("Errore nel rilascio escrow:", error);
+        toast({
+          title: "Errore",
+          description: "Impossibile eseguire il rilascio escrow",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Rilascio forzato completato",
+        description: "L'escrow è stato rilasciato con successo",
+      });
+
+      console.log("Risultato rilascio forzato:", data);
+      
+      // Reload submissions
+      await fetchSubmissions();
+    } catch (error) {
+      console.error("Errore nella chiamata:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il rilascio forzato",
+        variant: "destructive",
+      });
+    } finally {
+      setForcingEscrow(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       pending_verification: { label: "In Attesa", variant: "secondary" },
@@ -556,7 +639,22 @@ const AdminDashboard = () => {
                         </div>
                       )}
                       {submission.status === "verified" && (
-                        <span className="text-sm text-muted-foreground">Già approvato</span>
+                        <div className="flex gap-2 items-center">
+                          <span className="text-sm text-muted-foreground">Già approvato</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => forceReleaseEscrow(submission.id)}
+                            disabled={forcingEscrow === submission.id}
+                            title="Forza rilascio escrow"
+                          >
+                            {forcingEscrow === submission.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Zap className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       )}
                       {submission.status === "rejected" && (
                         <span className="text-sm text-muted-foreground">Già rifiutato</span>
