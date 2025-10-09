@@ -151,30 +151,40 @@ const Dashboard = () => {
 
       if (error) throw error;
 
+      console.log('=== DEBUG APPLICATIONS ===');
+      console.log('User type:', userType);
+      console.log('Total applications fetched:', data?.length);
+      data?.forEach((app, index) => {
+        console.log(`App ${index}:`, {
+          id: app.id,
+          status: app.status,
+          submissions: app.submissions,
+          submissionsIsArray: Array.isArray(app.submissions),
+          submissionsLength: app.submissions?.length
+        });
+      });
+
       // Filter out applications with approved submissions
       let filteredData = data || [];
-      console.log('Raw applications data:', data);
-      console.log('User type:', userType);
       
       if (userType === 'business') {
         filteredData = filteredData.filter(app => {
-          // Hide applications that have submissions with 'verified' status
           const hasApprovedSubmission = app.submissions && app.submissions.some(
             sub => sub.status === 'verified'
           );
-          console.log('Business app:', app.id, 'hasApprovedSubmission:', hasApprovedSubmission);
           return !hasApprovedSubmission;
         });
       } else if (userType === 'creator') {
         filteredData = filteredData.filter(app => {
-          // Hide applications that have submissions with 'verified' status (approved by admin)
           const hasApprovedSubmission = app.submissions && app.submissions.some(
             sub => sub.status === 'verified'
           );
-          console.log('Creator app:', app.id, 'submissions:', app.submissions, 'hasApprovedSubmission:', hasApprovedSubmission);
           return !hasApprovedSubmission;
         });
       }
+
+      console.log('Filtered applications:', filteredData.length);
+      console.log('=== END DEBUG ===');
 
       setApplications(filteredData);
 
