@@ -310,6 +310,24 @@ const AdminDashboard = () => {
         },
       });
 
+      // Update offer claimed_reward_cents
+      const { data: currentOffer, error: offerFetchError } = await supabase
+        .from("offers")
+        .select("claimed_reward_cents")
+        .eq("id", submission.application.offer.id)
+        .single();
+
+      if (offerFetchError) throw offerFetchError;
+
+      const { error: offerUpdateError } = await supabase
+        .from("offers")
+        .update({
+          claimed_reward_cents: (currentOffer?.claimed_reward_cents || 0) + earningsCents,
+        })
+        .eq("id", submission.application.offer.id);
+
+      if (offerUpdateError) throw offerUpdateError;
+
       // Send notification to creator
       await supabase.from("notifications").insert({
         user_id: submission.application.creator_id,
