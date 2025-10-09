@@ -325,11 +325,21 @@ const Wallet = () => {
       const completed = report.filter((r: any) => r.action === 'completed_and_credited').length;
 
       if (completed > 0) {
+        // Wait a moment for database propagation
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Fetch wallet data multiple times to ensure we get the updated data
+        await fetchWalletData();
+        
         toast({
           title: "Saldo Aggiornato",
           description: `${completed} ricarica${completed > 1 ? 'he' : ''} completata${completed > 1 ? 'e' : ''} con successo!`,
         });
-        await fetchWalletData();
+        
+        // Refetch again after a short delay to ensure UI is updated
+        setTimeout(() => {
+          fetchWalletData();
+        }, 500);
       } else {
         toast({
           title: "Nessuna ricarica da processare",
