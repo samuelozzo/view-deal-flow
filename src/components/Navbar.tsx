@@ -157,17 +157,32 @@ const Navbar = () => {
                       Gestione Offerte
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/archived-offers" className="cursor-pointer">
+                      Storico Offerte
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link
-                to="/offers"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  isActive("/offers") ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                {t("browseOffers")}
-              </Link>
+              <>
+                <Link
+                  to="/offers"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActive("/offers") ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {t("browseOffers")}
+                </Link>
+                <Link
+                  to="/completed-offers"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActive("/completed-offers") ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  Offerte Concluse
+                </Link>
+              </>
             )}
             <Link
               to="/dashboard"
@@ -302,16 +317,32 @@ const Navbar = () => {
                   >
                     Gestione Offerte
                   </Link>
+                  <Link
+                    to="/archived-offers"
+                    className="block py-2 px-4 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent rounded-md"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Storico Offerte
+                  </Link>
                 </div>
               </>
             ) : (
-              <Link
-                to="/offers"
-                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t("browseOffers")}
-              </Link>
+              <>
+                <Link
+                  to="/offers"
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t("browseOffers")}
+                </Link>
+                <Link
+                  to="/completed-offers"
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Offerte Concluse
+                </Link>
+              </>
             )}
             <Link
               to="/dashboard"

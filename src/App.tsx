@@ -22,6 +22,8 @@ import AccountSettings from "./pages/AccountSettings";
 import Wallet from "./pages/Wallet";
 import ManageOffers from "./pages/ManageOffers";
 import EditOffer from "./pages/EditOffer";
+import ArchivedOffers from "./pages/ArchivedOffers";
+import CompletedOffers from "./pages/CompletedOffers";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +51,8 @@ const App = () => (
               <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
               <Route path="/manage-offers" element={<ProtectedRoute><ManageOffers /></ProtectedRoute>} />
               <Route path="/edit-offer/:id" element={<ProtectedRoute><EditOffer /></ProtectedRoute>} />
+              <Route path="/archived-offers" element={<ProtectedRoute><ArchivedOffers /></ProtectedRoute>} />
+              <Route path="/completed-offers" element={<ProtectedRoute><CompletedOffers /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

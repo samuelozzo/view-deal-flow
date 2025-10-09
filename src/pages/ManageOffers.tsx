@@ -54,7 +54,7 @@ const ManageOffers = () => {
         .from("offers")
         .select("*")
         .eq("business_id", session.user.id)
-        .neq("status", "completed")
+        .in("status", ["draft", "open"])
         .order("created_at", { ascending: false });
 
       if (offersError) throw offersError;

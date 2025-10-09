@@ -119,7 +119,6 @@ const Dashboard = () => {
             )
           `)
           .eq('offers.business_id', user?.id)
-          .neq('offers.status', 'completed')
           .order('created_at', { ascending: false });
       } else {
         // Creator users see their own applications
@@ -145,7 +144,6 @@ const Dashboard = () => {
             )
           `)
           .eq('creator_id', user?.id)
-          .neq('offers.status', 'completed')
           .order('created_at', { ascending: false });
       }
 
