@@ -118,21 +118,23 @@ const Offers = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">{t("browseOffers")}</h1>
-            <p className="text-muted-foreground">{t("findPerfectDealsDesc")}</p>
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">{t("browseOffers")}</h1>
+              <p className="text-muted-foreground">{t("findPerfectDealsDesc")}</p>
+            </div>
+            <Button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Aggiorna offerte
+            </Button>
           </div>
-          <Button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Aggiorna offerte
-          </Button>
         </div>
 
         <div className="mb-8 space-y-4">
