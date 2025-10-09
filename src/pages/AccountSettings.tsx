@@ -16,7 +16,7 @@ import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AccountSettings = () => {
-  const { user } = useAuth();
+  const { user, isPasswordRecovery: contextIsPasswordRecovery } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
@@ -34,11 +34,8 @@ const AccountSettings = () => {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // Check if this is a password recovery flow
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
-    
-    if (type === 'recovery') {
+    // Check if this is a password recovery flow from context
+    if (contextIsPasswordRecovery) {
       setIsPasswordRecovery(true);
       toast.info("Imposta la tua nuova password");
     }
@@ -46,7 +43,7 @@ const AccountSettings = () => {
     if (user) {
       loadProfile();
     }
-  }, [user]);
+  }, [user, contextIsPasswordRecovery]);
 
   const loadProfile = async () => {
     try {
