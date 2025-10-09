@@ -19,9 +19,21 @@ Our marketplace needs to balance two competing requirements:
 
 ### Solution: Defense-in-Depth Architecture
 
-We use a two-layer security model:
+We use a **three-layer** security model:
 
-#### Layer 1: Row Level Security (RLS) on `profiles` table
+#### Layer 1: Authentication Requirement
+```sql
+-- Block anonymous (unauthenticated) access
+REVOKE ALL ON public.public_profiles FROM anon;
+REVOKE ALL ON public.public_profiles FROM public;
+
+-- Grant access only to authenticated users
+GRANT SELECT ON public.public_profiles TO authenticated;
+```
+
+**Result**: Anonymous users cannot query the view at all (prevents scraping).
+
+#### Layer 2: Row Level Security (RLS) on `profiles` table
 ```sql
 -- Users can only view their own complete profile
 CREATE POLICY "Users can view own complete profile"
@@ -36,7 +48,7 @@ USING (has_role(auth.uid(), 'admin'::app_role));
 
 **Result**: Direct table queries are blocked for other users' profiles.
 
-#### Layer 2: Filtered View with SECURITY DEFINER
+#### Layer 3: Filtered View with SECURITY DEFINER
 
 ```sql
 -- Safe public view for marketplace discovery
@@ -55,6 +67,28 @@ FROM profiles;
 **Why SECURITY DEFINER?**
 - Without it: View would respect RLS → Users can only see their own profile → **Marketplace breaks**
 - With it: View bypasses RLS → Shows only safe fields → **Marketplace works + Data protected**
+
+**Why Authentication Required?**
+- Without it: Anyone on internet can scrape user data → **Spam/phishing database building**
+- With it: Must be logged in to view → **Prevents bot scraping + Rate limiting**
+
+### Security Layers Visualized
+
+```
+Request → Layer 1: Authentication Check
+          ├─ Anon user? → ❌ BLOCKED (no scraping)
+          └─ Authenticated? → ✓ Continue
+                              │
+                              ↓
+          Layer 2: RLS Check (on profiles table)
+          ├─ Own profile? → ✓ See all fields
+          ├─ Other user? → ❌ BLOCKED (use view instead)
+          └─ Admin? → ✓ See all fields
+                       │
+                       ↓
+          Layer 3: View Filter (public_profiles)
+          └─ Expose only 6 safe fields (hide Stripe, platform_links)
+```
 
 ### Sensitive Fields Protected
 
