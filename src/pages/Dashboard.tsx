@@ -155,17 +155,17 @@ const Dashboard = () => {
       let filteredData = data || [];
       if (userType === 'business') {
         filteredData = filteredData.filter(app => {
-          // Hide applications that have submissions with 'escrow_accepted' or 'paid' status
+          // Hide applications that have submissions with 'verified' status
           const hasApprovedSubmission = app.submissions && app.submissions.some(
-            sub => sub.status === 'escrow_accepted' || sub.status === 'paid'
+            sub => sub.status === 'verified'
           );
           return !hasApprovedSubmission;
         });
       } else if (userType === 'creator') {
         filteredData = filteredData.filter(app => {
-          // Hide applications that have submissions with 'approved', 'escrow_accepted' or 'paid' status
+          // Hide applications that have submissions with 'verified' status (approved by admin)
           const hasApprovedSubmission = app.submissions && app.submissions.some(
-            sub => sub.status === 'approved' || sub.status === 'escrow_accepted' || sub.status === 'paid'
+            sub => sub.status === 'verified'
           );
           return !hasApprovedSubmission;
         });
