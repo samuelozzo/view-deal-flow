@@ -113,17 +113,17 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      // Fetch creator and business profiles
+      // Fetch creator and business profiles using public view for security
       const submissionsWithProfiles = await Promise.all(
         (data || []).map(async (submission: any) => {
           const [creatorProfile, businessProfile] = await Promise.all([
             supabase
-              .from("profiles")
+              .from("public_profiles")
               .select("display_name")
               .eq("id", submission.application.creator_id)
               .single(),
             supabase
-              .from("profiles")
+              .from("public_profiles")
               .select("display_name")
               .eq("id", submission.application.offer.business_id)
               .single(),
