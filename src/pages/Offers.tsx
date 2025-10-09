@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
-import { Search, DollarSign, Eye, RefreshCw } from "lucide-react";
+import { Search, DollarSign, Eye } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -39,7 +39,6 @@ const Offers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [rewardFilter, setRewardFilter] = useState("all");
 
@@ -47,12 +46,8 @@ const Offers = () => {
     fetchOffers();
   }, []);
 
-  const fetchOffers = async (isRefresh = false) => {
+  const fetchOffers = async () => {
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      }
-      
       const { data, error } = await supabase
         .from('offers')
         .select(`
@@ -66,21 +61,12 @@ const Offers = () => {
 
       if (error) throw error;
       setOffers(data || []);
-      
-      if (isRefresh) {
-        toast.success("Offerte aggiornate");
-      }
     } catch (error: any) {
       console.error("Error fetching offers:", error);
       toast.error("Failed to load offers");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  };
-
-  const handleRefresh = () => {
-    fetchOffers(true);
   };
 
   const filteredOffers = offers.filter((offer) => {
@@ -119,22 +105,8 @@ const Offers = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">{t("browseOffers")}</h1>
-              <p className="text-muted-foreground">{t("findPerfectDealsDesc")}</p>
-            </div>
-            <Button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2 w-full sm:w-auto"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Aggiorna offerte
-            </Button>
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{t("browseOffers")}</h1>
+          <p className="text-muted-foreground">{t("findPerfectDealsDesc")}</p>
         </div>
 
         <div className="mb-8 space-y-4">
