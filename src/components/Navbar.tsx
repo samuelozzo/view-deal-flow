@@ -193,14 +193,26 @@ const Navbar = () => {
               Pannello
             </Link>
             {isAdmin && (
-              <Link
-                to="/admin"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  isActive("/admin") ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                Admin Dashboard
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      isActive("/admin") ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    Admin
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="bg-background z-50">
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="cursor-pointer">
+                      Dashboard Admin
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             <Link
               to="/support"
@@ -352,13 +364,16 @@ const Navbar = () => {
               Pannello
             </Link>
             {isAdmin && (
-              <Link
-                to="/admin"
-                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Admin Dashboard
-              </Link>
+              <div className="py-2">
+                <p className="text-xs font-semibold text-muted-foreground px-2 mb-2">Admin</p>
+                <Link
+                  to="/admin"
+                  className="block py-2 px-4 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent rounded-md"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard Admin
+                </Link>
+              </div>
             )}
             {isLoggedIn && (
               <>
