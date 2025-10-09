@@ -24,6 +24,9 @@ import ManageOffers from "./pages/ManageOffers";
 import EditOffer from "./pages/EditOffer";
 import ArchivedOffers from "./pages/ArchivedOffers";
 import CompletedOffers from "./pages/CompletedOffers";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiePolicy from "./pages/CookiePolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +56,9 @@ const App = () => (
               <Route path="/edit-offer/:id" element={<ProtectedRoute><EditOffer /></ProtectedRoute>} />
               <Route path="/archived-offers" element={<ProtectedRoute><ArchivedOffers /></ProtectedRoute>} />
               <Route path="/completed-offers" element={<ProtectedRoute><CompletedOffers /></ProtectedRoute>} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

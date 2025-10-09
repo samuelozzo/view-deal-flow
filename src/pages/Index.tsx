@@ -199,8 +199,15 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>{t("footerText")}</p>
+          <div className="mt-12 pt-8 border-t border-border">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-sm text-muted-foreground text-center md:text-left">{t("footerText")}</p>
+              <div className="flex gap-4 text-xs text-muted-foreground">
+                <Link to="/privacy-policy" className="hover:text-primary">Privacy Policy</Link>
+                <Link to="/cookie-policy" className="hover:text-primary">Cookie Policy</Link>
+                <Link to="/terms-of-service" className="hover:text-primary">Terms of Service</Link>
+              </div>
+            </div>
           </div>
         </div>
       </footer>
