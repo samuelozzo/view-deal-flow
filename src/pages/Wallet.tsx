@@ -535,7 +535,40 @@ const Wallet = () => {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              {userRole === "creator" && !connectStatus.payouts_enabled && (
+              {userRole === "creator" && !connectStatus.payouts_enabled && connectStatus.onboarding_completed && (
+                <Card className="w-full border-yellow-500/50 bg-yellow-500/5">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-2">⏳ Verifica in Corso</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Hai completato l'onboarding, ma Stripe sta ancora verificando i tuoi dati. 
+                          Questo può richiedere qualche minuto. Se hai compilato tutto correttamente, i prelievi saranno abilitati a breve.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={checkConnectStatus}
+                            disabled={connectLoading}
+                            variant="outline"
+                          >
+                            {connectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Ricontrolla Stato
+                          </Button>
+                          <Button 
+                            onClick={startConnectOnboarding}
+                            disabled={connectLoading}
+                          >
+                            {connectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Completa Configurazione
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {userRole === "creator" && !connectStatus.onboarding_completed && (
                 <Card className="w-full border-orange-500/50 bg-orange-500/5">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-4">
