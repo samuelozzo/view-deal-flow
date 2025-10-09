@@ -169,17 +169,29 @@ const Dashboard = () => {
       
       if (userType === 'business') {
         filteredData = filteredData.filter(app => {
-          const hasApprovedSubmission = app.submissions && app.submissions.some(
-            sub => sub.status === 'verified'
-          );
-          return !hasApprovedSubmission;
+          // Check if submissions is an array or a single object
+          if (!app.submissions) return true;
+          
+          if (Array.isArray(app.submissions)) {
+            const hasApprovedSubmission = app.submissions.some(sub => sub.status === 'verified');
+            return !hasApprovedSubmission;
+          } else {
+            // submissions is a single object
+            return app.submissions.status !== 'verified';
+          }
         });
       } else if (userType === 'creator') {
         filteredData = filteredData.filter(app => {
-          const hasApprovedSubmission = app.submissions && app.submissions.some(
-            sub => sub.status === 'verified'
-          );
-          return !hasApprovedSubmission;
+          // Check if submissions is an array or a single object
+          if (!app.submissions) return true;
+          
+          if (Array.isArray(app.submissions)) {
+            const hasApprovedSubmission = app.submissions.some(sub => sub.status === 'verified');
+            return !hasApprovedSubmission;
+          } else {
+            // submissions is a single object
+            return app.submissions.status !== 'verified';
+          }
         });
       }
 
