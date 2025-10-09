@@ -253,34 +253,15 @@ const AdminDashboard = () => {
         throw new Error("Business wallet non trovato");
       }
 
-      if (businessWallet.available_cents < earningsCents) {
-        throw new Error("Saldo insufficiente nel wallet business");
+      // Check if there are sufficient reserved funds (funds are already in escrow from offer creation)
+      if (businessWallet.reserved_cents < earningsCents) {
+        throw new Error(`Fondi in escrow insufficienti. Riservati: €${(businessWallet.reserved_cents / 100).toFixed(2)}, Richiesti: €${(earningsCents / 100).toFixed(2)}`);
       }
 
-      // Reserve funds from business wallet
-      const { error: reserveError } = await supabase
-        .from("wallets")
-        .update({
-          available_cents: businessWallet.available_cents - earningsCents,
-          reserved_cents: businessWallet.reserved_cents + earningsCents,
-        })
-        .eq("id", businessWallet.id);
-
-      if (reserveError) throw reserveError;
-
-      // Create wallet transaction for reservation
-      await supabase.from("wallet_transactions").insert({
-        wallet_id: businessWallet.id,
-        type: "escrow_reserve",
-        direction: "out",
-        amount_cents: earningsCents,
-        status: "completed",
-        reference_type: "submission",
-        reference_id: submission.id,
-        metadata: {
-          offer_id: submission.application.offer.id,
-        },
-      });
+      // NO NEED TO UPDATE WALLET - funds are already reserved in escrow from offer creation
+      // The escrow_transactions table will track the allocation to the specific creator
+      
+      console.log(`✅ Using existing escrow funds: €${(earningsCents / 100).toFixed(2)} from reserved: €${(businessWallet.reserved_cents / 100).toFixed(2)}`);
 
       // Update submission status with actual views
       const { error: submissionError } = await supabase
