@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, ExternalLink, Loader2, Clock } from "lucide-react";
 
 interface SubmissionWithDetails {
   id: string;
@@ -51,6 +51,7 @@ const AdminDashboard = () => {
   const [adminNote, setAdminNote] = useState("");
   const [actualViews, setActualViews] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [testingEscrow, setTestingEscrow] = useState(false);
 
   useEffect(() => {
     checkAdminRole();
@@ -387,6 +388,44 @@ const AdminDashboard = () => {
     });
   };
 
+  const testEscrowRelease = async () => {
+    setTestingEscrow(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('release-escrows', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Errore nel rilascio escrow:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile eseguire il rilascio escrow",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Test completato",
+        description: `Processati ${data.processed || 0} escrow. Controlla la console per i dettagli.`,
+      });
+
+      console.log('Risultato test escrow:', data);
+      
+      // Ricarica le submissions per vedere gli aggiornamenti
+      await fetchSubmissions();
+    } catch (error) {
+      console.error('Errore nella chiamata:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il test",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingEscrow(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       pending_verification: { label: "In Attesa", variant: "secondary" },
@@ -414,6 +453,26 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
+        <div className="mb-6 flex justify-end">
+          <Button 
+            onClick={testEscrowRelease} 
+            disabled={testingEscrow}
+            variant="outline"
+            size="sm"
+          >
+            {testingEscrow ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Test in corso...
+              </>
+            ) : (
+              <>
+                <Clock className="h-4 w-4 mr-2" />
+                Test Rilascio Escrow
+              </>
+            )}
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Dashboard Amministratore</CardTitle>
