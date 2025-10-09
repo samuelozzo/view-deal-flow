@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, ExternalLink, Loader2 } from "lucide-react";
 
@@ -47,6 +49,7 @@ const AdminDashboard = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionWithDetails | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [adminNote, setAdminNote] = useState("");
+  const [actualViews, setActualViews] = useState("");
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -147,12 +150,14 @@ const AdminDashboard = () => {
     setSelectedSubmission(submission);
     setActionType(type);
     setAdminNote("");
+    setActualViews("");
   };
 
   const closeDialog = () => {
     setSelectedSubmission(null);
     setActionType(null);
     setAdminNote("");
+    setActualViews("");
   };
 
   const handleAction = async () => {
@@ -178,9 +183,22 @@ const AdminDashboard = () => {
 
   const handleApprove = async (submission: SubmissionWithDetails) => {
     try {
+      // Validate actual views input
+      const views = parseInt(actualViews);
+      if (!actualViews || isNaN(views) || views <= 0) {
+        toast({
+          title: "Errore",
+          description: "Inserisci un numero valido di visualizzazioni",
+          variant: "destructive",
+        });
+        throw new Error("Invalid views");
+      }
+
       // Calculate earnings based on views and offer reward
-      const rewardPerView = submission.application.offer.total_reward_cents / submission.application.offer.required_views;
-      const earningsCents = Math.floor(submission.actual_views * rewardPerView);
+      // Formula: (actual_views / required_views) * total_reward_cents
+      // Cap at total_reward_cents if views exceed required
+      const ratio = Math.min(views / submission.application.offer.required_views, 1);
+      const earningsCents = Math.round(submission.application.offer.total_reward_cents * ratio);
       
       // Calculate release date (14 days from now)
       const releaseDate = new Date();
@@ -226,11 +244,12 @@ const AdminDashboard = () => {
         },
       });
 
-      // Update submission status
+      // Update submission status with actual views
       const { error: submissionError } = await supabase
         .from("submissions")
         .update({
           status: "verified",
+          actual_views: views,
           calculated_earnings_cents: earningsCents,
           verified_at: new Date().toISOString(),
           admin_note: adminNote || null,
@@ -463,14 +482,39 @@ const AdminDashboard = () => {
               <div className="text-sm space-y-2">
                 <p><strong>Creator:</strong> {selectedSubmission.creator_profile?.display_name}</p>
                 <p><strong>Offerta:</strong> {selectedSubmission.application.offer.title}</p>
-                <p><strong>Views:</strong> {selectedSubmission.actual_views.toLocaleString()}</p>
+                <p><strong>Reward Totale:</strong> €{(selectedSubmission.application.offer.total_reward_cents / 100).toFixed(2)}</p>
+                <p><strong>Views Richieste:</strong> {selectedSubmission.application.offer.required_views.toLocaleString()}</p>
               </div>
             )}
+            
+            {actionType === 'approve' && selectedSubmission && (
+              <div className="space-y-2">
+                <Label htmlFor="actual-views">Visualizzazioni Effettive *</Label>
+                <Input
+                  id="actual-views"
+                  type="number"
+                  min="0"
+                  value={actualViews}
+                  onChange={(e) => setActualViews(e.target.value)}
+                  placeholder="Inserisci il numero di visualizzazioni..."
+                />
+                {actualViews && !isNaN(parseInt(actualViews)) && parseInt(actualViews) > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Reward calcolata: €{(Math.round(
+                      selectedSubmission.application.offer.total_reward_cents * 
+                      Math.min(parseInt(actualViews) / selectedSubmission.application.offer.required_views, 1)
+                    ) / 100).toFixed(2)}
+                  </p>
+                )}
+              </div>
+            )}
+            
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <Label htmlFor="admin-note">
                 Nota {actionType === 'reject' && '(Obbligatoria)'}
-              </label>
+              </Label>
               <Textarea
+                id="admin-note"
                 value={adminNote}
                 onChange={(e) => setAdminNote(e.target.value)}
                 placeholder={
