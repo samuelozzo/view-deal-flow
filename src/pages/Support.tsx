@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const Support = () => {
   const { t } = useLanguage();
   const whatsappNumber = "+31612345678"; // Replace with actual WhatsApp business number
-  const supportEmail = "support@viewdeal.eu";
+  const supportEmail = "support@weasydeal.eu";
 
   const faqs = [
     {
