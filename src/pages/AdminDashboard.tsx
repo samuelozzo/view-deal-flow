@@ -30,6 +30,10 @@ interface SubmissionWithDetails {
       business_id: string;
       total_reward_cents: number;
       required_views: number;
+      reward_type: string;
+      discount_percentage: number | null;
+      discount_code: string | null;
+      max_participants: number | null;
     };
   };
   creator_profile?: {
@@ -105,7 +109,11 @@ const AdminDashboard = () => {
               title,
               business_id,
               total_reward_cents,
-              required_views
+              required_views,
+              reward_type,
+              discount_percentage,
+              discount_code,
+              max_participants
             )
           )
         `)
@@ -187,6 +195,67 @@ const AdminDashboard = () => {
 
   const handleApprove = async (submission: SubmissionWithDetails) => {
     try {
+      const isDiscountOffer = submission.application.offer.reward_type === "discount";
+
+      if (isDiscountOffer) {
+        // Handle discount offer approval (no escrow, just reveal code)
+        const views = parseInt(actualViews);
+        if (!actualViews || isNaN(views) || views <= 0) {
+          toast({
+            title: "Errore",
+            description: "Inserisci un numero valido di visualizzazioni",
+            variant: "destructive",
+          });
+          throw new Error("Invalid views");
+        }
+
+        // Update submission status
+        const { error: submissionError } = await supabase
+          .from("submissions")
+          .update({
+            status: "verified",
+            actual_views: views,
+            verified_at: new Date().toISOString(),
+            admin_note: adminNote || null,
+          })
+          .eq("id", submission.id);
+
+        if (submissionError) throw submissionError;
+
+        // Close the offer (max_participants = 1 for discount offers)
+        const { error: offerUpdateError } = await supabase
+          .from("offers")
+          .update({ status: 'completed' })
+          .eq("id", submission.application.offer.id);
+
+        if (offerUpdateError) throw offerUpdateError;
+
+        // Send notification to creator with discount code
+        await supabase.from("notifications").insert({
+          user_id: submission.application.creator_id,
+          type: "discount_code_revealed",
+          title: "Codice Sconto Rivelato! 🎉",
+          message: `Il tuo video è stato approvato! Ecco il tuo codice sconto: ${submission.application.offer.discount_code} (${submission.application.offer.discount_percentage}% OFF)`,
+          link: `/dashboard`,
+        });
+
+        // Send notification to business
+        await supabase.from("notifications").insert({
+          user_id: submission.application.offer.business_id,
+          type: "offer_completed",
+          title: "Offerta Completata! 🎉",
+          message: `L'offerta "${submission.application.offer.title}" è stata completata con successo!`,
+          link: `/manage-offers`,
+        });
+
+        toast({
+          title: "Video approvato",
+          description: "Codice sconto rivelato al creator e offerta chiusa.",
+        });
+        return;
+      }
+
+      // Original cash offer approval logic
       // Validate actual views input
       const views = parseInt(actualViews);
       if (!actualViews || isNaN(views) || views <= 0) {
@@ -748,7 +817,12 @@ const AdminDashboard = () => {
               <div className="text-sm space-y-2">
                 <p><strong>Creator:</strong> {selectedSubmission.creator_profile?.display_name}</p>
                 <p><strong>Offerta:</strong> {selectedSubmission.application.offer.title}</p>
-                <p><strong>Reward Totale:</strong> €{(selectedSubmission.application.offer.total_reward_cents / 100).toFixed(2)}</p>
+                <p><strong>Tipo Ricompensa:</strong> {selectedSubmission.application.offer.reward_type === "discount" ? "Codice Sconto" : "Cash"}</p>
+                {selectedSubmission.application.offer.reward_type === "cash" ? (
+                  <p><strong>Reward Totale:</strong> €{(selectedSubmission.application.offer.total_reward_cents / 100).toFixed(2)}</p>
+                ) : (
+                  <p><strong>Sconto:</strong> {selectedSubmission.application.offer.discount_percentage}% OFF</p>
+                )}
                 <p><strong>Views Richieste:</strong> {selectedSubmission.application.offer.required_views.toLocaleString()}</p>
               </div>
             )}
@@ -764,12 +838,17 @@ const AdminDashboard = () => {
                   onChange={(e) => setActualViews(e.target.value)}
                   placeholder="Inserisci il numero di visualizzazioni..."
                 />
-                {actualViews && !isNaN(parseInt(actualViews)) && parseInt(actualViews) > 0 && (
+                {selectedSubmission.application.offer.reward_type === "cash" && actualViews && !isNaN(parseInt(actualViews)) && parseInt(actualViews) > 0 && (
                   <p className="text-sm text-muted-foreground">
                     Reward calcolata: €{(Math.round(
                       selectedSubmission.application.offer.total_reward_cents * 
                       Math.min(parseInt(actualViews) / selectedSubmission.application.offer.required_views, 1)
                     ) / 100).toFixed(2)}
+                  </p>
+                )}
+                {selectedSubmission.application.offer.reward_type === "discount" && (
+                  <p className="text-sm text-muted-foreground">
+                    Codice sconto: <strong>{selectedSubmission.application.offer.discount_code}</strong> ({selectedSubmission.application.offer.discount_percentage}% OFF)
                   </p>
                 )}
               </div>

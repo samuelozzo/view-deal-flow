@@ -413,11 +413,14 @@ const Dashboard = () => {
                           {getStatusBadge(app)}
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                           <div>
                             <p className="text-xs text-muted-foreground">{t("reward")}</p>
                             <p className="font-semibold">
-                              €{(app.offers.total_reward_cents / 100).toFixed(2)}
+                              {(app.offers as any).reward_type === "discount" 
+                                ? `${(app.offers as any).discount_percentage}% OFF`
+                                : `€${(app.offers.total_reward_cents / 100).toFixed(2)}`
+                              }
                             </p>
                           </div>
                           <div>

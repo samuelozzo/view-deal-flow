@@ -23,6 +23,9 @@ interface Offer {
   required_views: number;
   platform: string;
   category: string;
+  discount_percentage: number | null;
+  discount_code: string | null;
+  max_participants: number | null;
   profiles?: {
     display_name: string | null;
   };
@@ -286,7 +289,10 @@ const OfferDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">{t("totalReward")}</p>
                   <p className="text-3xl font-bold text-primary">
-                    €{(offer.total_reward_cents / 100).toFixed(2)}
+                    {offer.reward_type === "discount" 
+                      ? `${offer.discount_percentage}% OFF`
+                      : `€${(offer.total_reward_cents / 100).toFixed(2)}`
+                    }
                   </p>
                 </div>
 
@@ -301,6 +307,18 @@ const OfferDetail = () => {
                     <Progress value={progressPercentage} className="h-2" />
                     <p className="text-xs text-muted-foreground">
                       {progressPercentage.toFixed(1)}% {t("claimed")}
+                    </p>
+                  </div>
+                )}
+                
+                {offer.reward_type === "discount" && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Partecipanti</span>
+                      <span className="font-semibold">0 / {offer.max_participants || 1}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Il codice sconto sarà rivelato dopo l'approvazione
                     </p>
                   </div>
                 )}

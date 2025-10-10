@@ -28,6 +28,9 @@ interface Offer {
   required_views: number;
   status: string;
   created_at: string;
+  discount_percentage: number | null;
+  discount_code: string | null;
+  max_participants: number | null;
   has_active_applications?: boolean;
 }
 
@@ -145,6 +148,9 @@ const ManageOffers = () => {
   };
 
   const getRewardDisplay = (offer: Offer) => {
+    if (offer.reward_type === "discount") {
+      return `${offer.discount_percentage}% OFF`;
+    }
     if (offer.reward_type === "cash") {
       return `€${(offer.total_reward_cents / 100).toFixed(2)}`;
     }

@@ -29,6 +29,9 @@ interface Offer {
   platform: string;
   category: string;
   status: string;
+  discount_percentage: number | null;
+  discount_code: string | null;
+  max_participants: number | null;
   profiles?: {
     display_name: string | null;
   };
@@ -190,7 +193,10 @@ const Offers = () => {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{t("totalReward")}:</span>
                         <span className="font-bold text-lg text-primary">
-                          €{(offer.total_reward_cents / 100).toFixed(2)}
+                          {offer.reward_type === "discount" 
+                            ? `${offer.discount_percentage}% OFF`
+                            : `€${(offer.total_reward_cents / 100).toFixed(2)}`
+                          }
                         </span>
                       </div>
                       
@@ -201,6 +207,12 @@ const Offers = () => {
                             <span>{t("remaining")}: €{remainingReward.toFixed(2)}</span>
                           </div>
                           <Progress value={progressPercentage} className="h-2" />
+                        </div>
+                      )}
+                      
+                      {offer.reward_type === "discount" && (
+                        <div className="text-xs text-muted-foreground">
+                          <span>Partecipanti: 0 / {offer.max_participants || 1}</span>
                         </div>
                       )}
                     </div>
