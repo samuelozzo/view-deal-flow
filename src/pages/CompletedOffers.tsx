@@ -73,10 +73,14 @@ const CompletedOffers = () => {
       if (error) throw error;
 
       // Extract unique offers from applications with verified submissions
+      // Exclude discount offers as they don't have monetary rewards
       const uniqueOffers = new Map();
       data?.forEach((app: any) => {
         if (app.offers && !uniqueOffers.has(app.offers.id)) {
-          uniqueOffers.set(app.offers.id, app.offers);
+          // Only show cash offers in completed offers page
+          if (app.offers.reward_type === 'cash') {
+            uniqueOffers.set(app.offers.id, app.offers);
+          }
         }
       });
 

@@ -168,8 +168,18 @@ const Dashboard = () => {
         });
       });
 
-      // Filter out applications with approved submissions
+      // Filter out applications with approved submissions and completed discount offers
       let filteredData = data || [];
+      
+      // First filter: Remove completed discount offers
+      filteredData = filteredData.filter(app => {
+        const offer = app.offers as any;
+        // Hide if it's a completed discount offer
+        if (offer.reward_type === 'discount' && offer.status === 'completed') {
+          return false;
+        }
+        return true;
+      });
       
       if (userType === 'business') {
         filteredData = filteredData.filter(app => {
