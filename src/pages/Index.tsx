@@ -47,43 +47,44 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
-        <div className="container mx-auto px-4 py-20 md:py-32 relative">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+        <div className="container mx-auto px-4 py-12 sm:py-16 md:py-24 lg:py-32 relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+            <div className="space-y-4 md:space-y-6 text-center md:text-left">
+              <h1 className="text-fluid-2xl font-bold leading-tight">
                 {t("heroTitle")}
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   {" "}{t("heroTitleHighlight")}
                 </span>
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto md:mx-0">
                 {t("heroDescription")}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button variant="hero" size="lg" asChild>
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full sm:w-auto">
+                <Button variant="hero" size="lg" asChild className="touch-target w-full sm:w-auto">
                   <Link to="/how-it-works">{t("learnHowItWorks")}</Link>
                 </Button>
-                <Button variant="outline" size="lg" asChild>
+                <Button variant="outline" size="lg" asChild className="touch-target w-full sm:w-auto">
                   <Link to="/onboarding">{t("startCreatingDeals")}</Link>
                 </Button>
               </div>
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 sm:gap-6 text-sm text-muted-foreground pt-2">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-success" />
+                  <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
                   <span>{t("secureEscrow")}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-success" />
+                  <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
                   <span>{t("dayVerification")}</span>
                 </div>
               </div>
             </div>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-3xl blur-3xl" />
+            <div className="relative order-first md:order-last">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl md:rounded-3xl blur-3xl" />
               <img
                 src={heroImage}
                 alt={t("heroTitle")}
-                className="relative rounded-3xl shadow-2xl"
+                className="relative rounded-2xl md:rounded-3xl shadow-2xl w-full h-auto"
+                loading="eager"
               />
             </div>
           </div>
@@ -91,21 +92,21 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-secondary/30">
+      <section className="py-12 sm:py-16 md:py-20 bg-secondary/30">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="text-fluid-xl font-bold mb-3 md:mb-4">
               {t("whyChoose")}
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto px-4">
               {t("whyChooseDescription")}
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {features.map((feature, index) => (
-              <Card key={index} className="p-6 hover:shadow-xl transition-all duration-300 bg-card">
-                <feature.icon className="h-10 w-10 text-primary mb-4" />
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
+              <Card key={index} className="p-4 md:p-6 hover:shadow-xl transition-all duration-300 bg-card">
+                <feature.icon className="h-8 w-8 md:h-10 md:w-10 text-primary mb-3 md:mb-4" />
+                <h3 className="font-semibold mb-2 text-base md:text-lg">{feature.title}</h3>
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
               </Card>
             ))}
@@ -114,34 +115,34 @@ const Index = () => {
       </section>
 
       {/* How It Works Preview */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-primary/5 to-accent/5">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="text-fluid-xl font-bold mb-3 md:mb-4">
               {t("howItWorks")}
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+            <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-8 px-4">
               {t("howItWorksDescription")}
             </p>
           </div>
-          <div className="grid md:grid-cols-5 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8 mb-8 md:mb-12">
             {steps.map((step, index) => (
               <div key={index} className="relative">
                 <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center text-2xl font-bold text-primary-foreground shadow-lg">
+                  <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center text-xl md:text-2xl font-bold text-primary-foreground shadow-lg">
                     {step.number}
                   </div>
-                  <h3 className="font-semibold mb-2">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.desc}</p>
+                  <h3 className="font-semibold mb-2 text-sm md:text-base">{step.title}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground px-2">{step.desc}</p>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-primary to-transparent" />
+                  <div className="hidden lg:block absolute top-7 md:top-8 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-primary to-transparent" />
                 )}
               </div>
             ))}
           </div>
           <div className="text-center">
-            <Button variant="hero" size="lg" asChild>
+            <Button variant="hero" size="lg" asChild className="touch-target w-full sm:w-auto">
               <Link to="/how-it-works">{t("seeFullProcess")}</Link>
             </Button>
           </div>
@@ -149,63 +150,63 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary via-primary-glow to-accent relative overflow-hidden">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-primary via-primary-glow to-accent relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-white/10" />
         <div className="container mx-auto px-4 text-center relative">
-          <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
+          <h2 className="text-fluid-xl font-bold text-primary-foreground mb-3 md:mb-4 px-4">
             {t("readyToStart")}
           </h2>
-          <p className="text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-sm md:text-base text-primary-foreground/90 mb-6 md:mb-8 max-w-2xl mx-auto px-4">
             {t("readyToStartDesc")}
           </p>
-          <Button variant="secondary" size="lg" asChild>
+          <Button variant="secondary" size="lg" asChild className="touch-target w-full sm:w-auto max-w-xs mx-auto">
             <Link to="/onboarding">{t("createYourAccount")}</Link>
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-secondary/50 py-12 border-t border-border">
+      <footer className="bg-secondary/50 py-8 md:py-12 border-t border-border">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg" />
-                <span className="text-xl font-bold">WeasyDeal</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="text-center sm:text-left">
+              <div className="flex items-center justify-center sm:justify-start space-x-2 mb-3 md:mb-4">
+                <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg" />
+                <span className="text-lg md:text-xl font-bold">WeasyDeal</span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground">
                 {t("heroDescription")}
               </p>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">{t("forCreators")}</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/offers" className="hover:text-primary">{t("browseOffers")}</Link></li>
-                <li><Link to="/dashboard" className="hover:text-primary">{t("dashboard")}</Link></li>
+            <div className="text-center sm:text-left">
+              <h4 className="font-semibold mb-3 md:mb-4 text-sm md:text-base">{t("forCreators")}</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
+                <li><Link to="/offers" className="hover:text-primary transition-colors">{t("browseOffers")}</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary transition-colors">{t("dashboard")}</Link></li>
               </ul>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">{t("forBrands")}</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/onboarding" className="hover:text-primary">{t("postAnOffer")}</Link></li>
-                <li><Link to="/dashboard" className="hover:text-primary">{t("manageCampaigns")}</Link></li>
+            <div className="text-center sm:text-left">
+              <h4 className="font-semibold mb-3 md:mb-4 text-sm md:text-base">{t("forBrands")}</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
+                <li><Link to="/onboarding" className="hover:text-primary transition-colors">{t("postAnOffer")}</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary transition-colors">{t("manageCampaigns")}</Link></li>
               </ul>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">{t("support")}</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/support" className="hover:text-primary">{t("helpCenter")}</Link></li>
-                <li><Link to="/support" className="hover:text-primary">{t("contactUs")}</Link></li>
+            <div className="text-center sm:text-left">
+              <h4 className="font-semibold mb-3 md:mb-4 text-sm md:text-base">{t("support")}</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
+                <li><Link to="/support" className="hover:text-primary transition-colors">{t("helpCenter")}</Link></li>
+                <li><Link to="/support" className="hover:text-primary transition-colors">{t("contactUs")}</Link></li>
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-border">
+          <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-muted-foreground text-center md:text-left">{t("footerText")}</p>
-              <div className="flex gap-4 text-xs text-muted-foreground">
-                <Link to="/privacy-policy" className="hover:text-primary">Privacy Policy</Link>
-                <Link to="/cookie-policy" className="hover:text-primary">Cookie Policy</Link>
-                <Link to="/terms-of-service" className="hover:text-primary">Terms of Service</Link>
+              <p className="text-xs md:text-sm text-muted-foreground text-center md:text-left">{t("footerText")}</p>
+              <div className="flex flex-wrap justify-center gap-3 md:gap-4 text-xs text-muted-foreground">
+                <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+                <Link to="/cookie-policy" className="hover:text-primary transition-colors">Cookie Policy</Link>
+                <Link to="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
               </div>
             </div>
           </div>
