@@ -63,6 +63,8 @@ const Offers = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log("DEBUG Offers data:", data);
+      console.log("DEBUG First offer:", data?.[0]);
       setOffers(data || []);
     } catch (error: any) {
       console.error("Error fetching offers:", error);
@@ -171,6 +173,13 @@ const Offers = () => {
               const progressPercentage = (offer.claimed_reward_cents / offer.total_reward_cents) * 100;
               const remainingReward = (offer.total_reward_cents - offer.claimed_reward_cents) / 100;
               const businessName = offer.profiles?.display_name || "Unknown Business";
+              
+              console.log("DEBUG Rendering offer:", {
+                title: offer.title,
+                reward_type: offer.reward_type,
+                discount_percentage: offer.discount_percentage,
+                total_reward_cents: offer.total_reward_cents
+              });
 
               return (
                 <Card key={offer.id} className="hover:shadow-lg transition-shadow">
