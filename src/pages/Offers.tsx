@@ -81,12 +81,13 @@ const Offers = () => {
     const matchesCategory =
       categoryFilter === "all" || offer.category === categoryFilter;
     
-    const rewardAmount = offer.total_reward_cents / 100;
-    const matchesReward =
-      rewardFilter === "all" ||
-      (rewardFilter === "low" && rewardAmount < 100) ||
-      (rewardFilter === "medium" && rewardAmount >= 100 && rewardAmount < 500) ||
-      (rewardFilter === "high" && rewardAmount >= 500);
+    // For discount offers, ignore reward filter (not applicable)
+    const matchesReward = offer.reward_type === "discount" 
+      ? true 
+      : rewardFilter === "all" ||
+        (rewardFilter === "low" && offer.total_reward_cents < 10000) ||
+        (rewardFilter === "medium" && offer.total_reward_cents >= 10000 && offer.total_reward_cents < 50000) ||
+        (rewardFilter === "high" && offer.total_reward_cents >= 50000);
 
     return matchesSearch && matchesCategory && matchesReward;
   });
