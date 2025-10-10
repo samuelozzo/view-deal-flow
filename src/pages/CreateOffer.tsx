@@ -40,25 +40,17 @@ const discountSchema = z.object({
     .max(500, "Discount details must be less than 500 characters"),
 });
 
-const freeGiftSchema = z.object({
-  freeGiftDetails: z.string()
-    .trim()
-    .min(1, "Free gift details are required")
-    .max(500, "Free gift details must be less than 500 characters"),
-});
-
 const CreateOffer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
   
-  const [rewardType, setRewardType] = useState<"cash" | "discount" | "free">("cash");
+  const [rewardType, setRewardType] = useState<"cash" | "discount">("cash");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     cashAmount: "",
     discountDetails: "",
-    freeGiftDetails: "",
     requiredViews: "",
     platform: "TikTok",
     totalRewardAmount: ""
@@ -89,10 +81,6 @@ const CreateOffer = () => {
       } else if (rewardType === "discount") {
         discountSchema.parse({
           discountDetails: formData.discountDetails,
-        });
-      } else if (rewardType === "free") {
-        freeGiftSchema.parse({
-          freeGiftDetails: formData.freeGiftDetails,
         });
       }
 
@@ -237,14 +225,13 @@ const CreateOffer = () => {
 
               <div className="space-y-2">
                 <Label>{t("rewardType")}</Label>
-                <Select value={rewardType} onValueChange={(value: "cash" | "discount" | "free") => setRewardType(value)}>
+                <Select value={rewardType} onValueChange={(value: "cash" | "discount") => setRewardType(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash">{t("cashPerView")}</SelectItem>
                     <SelectItem value="discount">{t("discount")}</SelectItem>
-                    <SelectItem value="free">{t("freeGift")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -275,20 +262,6 @@ const CreateOffer = () => {
                     placeholder={t("discountPlaceholder")}
                     value={formData.discountDetails}
                     onChange={(e) => setFormData({ ...formData, discountDetails: e.target.value })}
-                    required
-                    rows={3}
-                  />
-                </div>
-              )}
-
-              {rewardType === "free" && (
-                <div className="space-y-2">
-                  <Label htmlFor="freeGiftDetails">{t("freeGiftDetails")}</Label>
-                  <Textarea
-                    id="freeGiftDetails"
-                    placeholder={t("giftPlaceholder")}
-                    value={formData.freeGiftDetails}
-                    onChange={(e) => setFormData({ ...formData, freeGiftDetails: e.target.value })}
                     required
                     rows={3}
                   />
