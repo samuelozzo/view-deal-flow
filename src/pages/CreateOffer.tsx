@@ -33,13 +33,6 @@ const cashRewardSchema = z.object({
     .max(1000000, "Total reward amount cannot exceed €1,000,000"),
 });
 
-const discountSchema = z.object({
-  discountDetails: z.string()
-    .trim()
-    .min(1, "Discount details are required")
-    .max(500, "Discount details must be less than 500 characters"),
-});
-
 const CreateOffer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -49,8 +42,6 @@ const CreateOffer = () => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    cashAmount: "",
-    discountDetails: "",
     requiredViews: "",
     platform: "TikTok",
     totalRewardAmount: ""
@@ -78,10 +69,6 @@ const CreateOffer = () => {
           totalRewardAmount: Number(formData.totalRewardAmount),
         });
         totalRewardCents = Math.round(Number(formData.totalRewardAmount) * 100);
-      } else if (rewardType === "discount") {
-        discountSchema.parse({
-          discountDetails: formData.discountDetails,
-        });
       }
 
       // Get current user session
@@ -251,20 +238,6 @@ const CreateOffer = () => {
                   <p className="text-sm text-muted-foreground">
                     {t("totalRewardDesc")}
                   </p>
-                </div>
-              )}
-
-              {rewardType === "discount" && (
-                <div className="space-y-2">
-                  <Label htmlFor="discountDetails">{t("discountDetails")}</Label>
-                  <Textarea
-                    id="discountDetails"
-                    placeholder={t("discountPlaceholder")}
-                    value={formData.discountDetails}
-                    onChange={(e) => setFormData({ ...formData, discountDetails: e.target.value })}
-                    required
-                    rows={3}
-                  />
                 </div>
               )}
 
