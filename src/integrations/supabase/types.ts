@@ -256,8 +256,11 @@ export type Database = {
           claimed_reward_cents: number
           created_at: string
           description: string
+          discount_code: string | null
+          discount_percentage: number | null
           escrow_funded: boolean
           id: string
+          max_participants: number | null
           platform: Database["public"]["Enums"]["platform_type"]
           required_views: number
           reward_type: Database["public"]["Enums"]["reward_type"]
@@ -273,8 +276,11 @@ export type Database = {
           claimed_reward_cents?: number
           created_at?: string
           description: string
+          discount_code?: string | null
+          discount_percentage?: number | null
           escrow_funded?: boolean
           id?: string
+          max_participants?: number | null
           platform: Database["public"]["Enums"]["platform_type"]
           required_views: number
           reward_type: Database["public"]["Enums"]["reward_type"]
@@ -290,8 +296,11 @@ export type Database = {
           claimed_reward_cents?: number
           created_at?: string
           description?: string
+          discount_code?: string | null
+          discount_percentage?: number | null
           escrow_funded?: boolean
           id?: string
+          max_participants?: number | null
           platform?: Database["public"]["Enums"]["platform_type"]
           required_views?: number
           reward_type?: Database["public"]["Enums"]["reward_type"]

@@ -33,6 +33,16 @@ const cashRewardSchema = z.object({
     .max(1000000, "Total reward amount cannot exceed €1,000,000"),
 });
 
+const discountSchema = z.object({
+  discountPercentage: z.number()
+    .min(1, "Discount percentage must be at least 1%")
+    .max(100, "Discount percentage cannot exceed 100%"),
+  discountCode: z.string()
+    .trim()
+    .min(1, "Discount code is required")
+    .max(50, "Discount code must be less than 50 characters"),
+});
+
 const CreateOffer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,7 +54,9 @@ const CreateOffer = () => {
     description: "",
     requiredViews: "",
     platform: "TikTok",
-    totalRewardAmount: ""
+    totalRewardAmount: "",
+    discountPercentage: "",
+    discountCode: ""
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,14 +73,23 @@ const CreateOffer = () => {
       
       offerSchema.parse(baseData);
       
-      // Calculate total reward in cents
+      // Calculate total reward in cents and validate
       let totalRewardCents = 0;
+      let discountPercentage = null;
+      let discountCode = null;
       
       if (rewardType === "cash") {
         cashRewardSchema.parse({
           totalRewardAmount: Number(formData.totalRewardAmount),
         });
         totalRewardCents = Math.round(Number(formData.totalRewardAmount) * 100);
+      } else if (rewardType === "discount") {
+        discountSchema.parse({
+          discountPercentage: Number(formData.discountPercentage),
+          discountCode: formData.discountCode,
+        });
+        discountPercentage = Number(formData.discountPercentage);
+        discountCode = formData.discountCode;
       }
 
       // Get current user session
@@ -92,6 +113,9 @@ const CreateOffer = () => {
           total_reward_cents: totalRewardCents,
           required_views: Number(formData.requiredViews),
           category: "Product Review",
+          discount_percentage: discountPercentage,
+          discount_code: discountCode,
+          max_participants: rewardType === "discount" ? 1 : null,
         },
       });
 
@@ -239,6 +263,43 @@ const CreateOffer = () => {
                     {t("totalRewardDesc")}
                   </p>
                 </div>
+              )}
+
+              {rewardType === "discount" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="discountPercentage">{t("discountPercentage")}</Label>
+                    <Input
+                      id="discountPercentage"
+                      type="number"
+                      min="1"
+                      max="100"
+                      placeholder="E.g., 20"
+                      value={formData.discountPercentage}
+                      onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })}
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Percentuale di sconto (1-100%)
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="discountCode">{t("discountCode")}</Label>
+                    <Input
+                      id="discountCode"
+                      type="text"
+                      placeholder="E.g., PROMO2025"
+                      value={formData.discountCode}
+                      onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })}
+                      required
+                      maxLength={50}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Codice sconto che verrà rivelato al creator accettato
+                    </p>
+                  </div>
+                </>
               )}
 
               <div className="pt-4">

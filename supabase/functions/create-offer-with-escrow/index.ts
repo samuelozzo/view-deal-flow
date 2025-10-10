@@ -15,10 +15,13 @@ interface CreateOfferRequest {
   title: string;
   description: string;
   platform: 'TikTok' | 'Instagram' | 'YouTube';
-  reward_type: 'cash' | 'discount' | 'free';
+  reward_type: 'cash' | 'discount';
   total_reward_cents: number;
   required_views: number;
   category: string;
+  discount_percentage?: number;
+  discount_code?: string;
+  max_participants?: number;
 }
 
 serve(async (req) => {
@@ -100,6 +103,7 @@ serve(async (req) => {
           category: offerData.category,
           status: 'open',
           escrow_funded: true,
+          max_participants: offerData.max_participants || null,
         })
         .select('id')
         .single();
@@ -204,6 +208,9 @@ serve(async (req) => {
           category: offerData.category,
           status: 'open',
           escrow_funded: false,
+          discount_percentage: offerData.discount_percentage || null,
+          discount_code: offerData.discount_code || null,
+          max_participants: offerData.max_participants || null,
         })
         .select('id')
         .single();
