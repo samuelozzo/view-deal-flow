@@ -195,6 +195,28 @@ const AdminDashboard = () => {
 
   const handleApprove = async (submission: SubmissionWithDetails) => {
     try {
+      // Check if offer is still open before approving
+      const { data: currentOfferStatus, error: statusCheckError } = await supabase
+        .from("offers")
+        .select("status")
+        .eq("id", submission.application.offer.id)
+        .single();
+
+      if (statusCheckError) {
+        throw new Error("Impossibile verificare lo stato dell'offerta");
+      }
+
+      if (currentOfferStatus.status === 'completed' || currentOfferStatus.status === 'cancelled') {
+        toast({
+          title: "Offerta già chiusa",
+          description: "Questa offerta è già stata chiusa e non può accettare nuove approvazioni.",
+          variant: "destructive",
+        });
+        closeDialog();
+        fetchSubmissions(); // Refresh to update UI
+        return;
+      }
+
       const isDiscountOffer = submission.application.offer.reward_type === "discount";
 
       if (isDiscountOffer) {
