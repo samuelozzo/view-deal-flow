@@ -191,10 +191,12 @@ const Dashboard = () => {
           
           if (Array.isArray(app.submissions)) {
             const hasApprovedSubmission = app.submissions.some(sub => sub.status === 'verified');
-            return !hasApprovedSubmission;
+            const hasRejectedSubmission = app.submissions.some(sub => sub.status === 'rejected');
+            // Hide if approved or rejected
+            return !hasApprovedSubmission && !hasRejectedSubmission;
           } else {
             // submissions is a single object
-            return app.submissions.status !== 'verified';
+            return app.submissions.status !== 'verified' && app.submissions.status !== 'rejected';
           }
         });
       }

@@ -40,11 +40,16 @@ const CompletedOffers = () => {
       if (!session) return;
 
       // Get all applications from the creator that have offers with status 'completed'
+      // and have verified submissions
       const { data, error } = await supabase
         .from("applications")
         .select(`
           id,
           status,
+          submissions!inner (
+            id,
+            status
+          ),
           offers!inner (
             id,
             title,
@@ -62,11 +67,12 @@ const CompletedOffers = () => {
           )
         `)
         .eq("creator_id", session.user.id)
-        .eq("offers.status", "completed");
+        .eq("offers.status", "completed")
+        .eq("submissions.status", "verified");
 
       if (error) throw error;
 
-      // Extract unique offers from applications
+      // Extract unique offers from applications with verified submissions
       const uniqueOffers = new Map();
       data?.forEach((app: any) => {
         if (app.offers && !uniqueOffers.has(app.offers.id)) {
