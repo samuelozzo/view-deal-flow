@@ -109,7 +109,9 @@ const Dashboard = () => {
               total_reward_cents,
               required_views,
               business_id,
-              status
+              status,
+              reward_type,
+              discount_percentage
             ),
             submissions (
               id,
@@ -132,6 +134,8 @@ const Dashboard = () => {
               total_reward_cents,
               required_views,
               status,
+              reward_type,
+              discount_percentage,
               profiles:business_id (
                 display_name
               )
@@ -418,7 +422,7 @@ const Dashboard = () => {
                             <p className="text-xs text-muted-foreground">{t("reward")}</p>
                             <p className="font-semibold">
                               {(app.offers as any).reward_type === "discount" 
-                                ? `${(app.offers as any).discount_percentage}% OFF`
+                                ? `${(app.offers as any).discount_percentage || 0}% OFF`
                                 : `€${(app.offers.total_reward_cents / 100).toFixed(2)}`
                               }
                             </p>
