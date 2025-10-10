@@ -194,7 +194,7 @@ const Offers = () => {
                         <span className="text-muted-foreground">{t("totalReward")}:</span>
                         <span className="font-bold text-lg text-primary">
                           {offer.reward_type === "discount" 
-                            ? `${offer.discount_percentage}% OFF`
+                            ? `${offer.discount_percentage || 0}% OFF`
                             : `€${(offer.total_reward_cents / 100).toFixed(2)}`
                           }
                         </span>
