@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { TrendingUp, Shield, Zap, Euro, Eye, CheckCircle } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
+import logo from "@/assets/logo.png";
 
 const Index = () => {
   const { t } = useLanguage();
@@ -171,7 +172,7 @@ const Index = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div className="text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start space-x-2 mb-3 md:mb-4">
-                <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg" />
+                <img src={logo} alt="WeasyDeal" className="w-7 h-7 md:w-8 md:h-8" />
                 <span className="text-lg md:text-xl font-bold">WeasyDeal</span>
               </div>
               <p className="text-xs md:text-sm text-muted-foreground">
