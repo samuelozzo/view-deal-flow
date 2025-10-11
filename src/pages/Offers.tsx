@@ -12,8 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
-import { Search, DollarSign, Eye } from "lucide-react";
+import { Search, DollarSign, Eye, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -44,10 +55,30 @@ const Offers = () => {
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [rewardFilter, setRewardFilter] = useState("all");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [adminMessage, setAdminMessage] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [pendingAppsWarning, setPendingAppsWarning] = useState(false);
+  const [pendingAppsCount, setPendingAppsCount] = useState(0);
 
   useEffect(() => {
+    checkAdminRole();
     fetchOffers();
   }, []);
+
+  const checkAdminRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    setIsAdmin(roles?.some(r => r.role === 'admin') || false);
+  };
 
   const fetchOffers = async () => {
     try {
@@ -93,6 +124,59 @@ const Offers = () => {
 
     return matchesSearch && matchesCategory && matchesReward;
   });
+
+  const handleDeleteClick = async (offer: Offer) => {
+    setSelectedOffer(offer);
+    setAdminMessage("");
+    setPendingAppsWarning(false);
+    
+    // Check for pending applications
+    const { data: apps } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('offer_id', offer.id)
+      .eq('status', 'pending');
+    
+    const count = apps?.length || 0;
+    setPendingAppsCount(count);
+    
+    if (count > 0) {
+      setPendingAppsWarning(true);
+    }
+    
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedOffer || !adminMessage.trim()) {
+      toast.error("Inserisci un messaggio per la notifica");
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-offer', {
+        body: {
+          offer_id: selectedOffer.id,
+          admin_message: adminMessage,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Offerta eliminata. ${data.funds_released > 0 ? `€${(data.funds_released / 100).toFixed(2)} rilasciati.` : ''} ${data.applications_rejected > 0 ? `${data.applications_rejected} applicazioni rifiutate.` : ''}`);
+      
+      setDeleteDialogOpen(false);
+      setSelectedOffer(null);
+      setAdminMessage("");
+      fetchOffers();
+    } catch (error: any) {
+      console.error('Error deleting offer:', error);
+      toast.error(error.message || "Errore durante l'eliminazione");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -250,10 +334,20 @@ const Offers = () => {
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="flex flex-col gap-2">
                     <Button className="w-full" variant="hero" asChild>
                       <Link to={`/offers/${offer.id}`}>{t("viewDetails")}</Link>
                     </Button>
+                    {isAdmin && (
+                      <Button 
+                        className="w-full" 
+                        variant="destructive"
+                        onClick={() => handleDeleteClick(offer)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Elimina Offerta (Admin)
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
               );
@@ -261,6 +355,57 @@ const Offers = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Elimina Offerta</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              {pendingAppsWarning && (
+                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <p className="text-amber-800 dark:text-amber-200 font-semibold">
+                    ⚠️ Attenzione: {pendingAppsCount} applicazion{pendingAppsCount === 1 ? 'e' : 'i'} in sospeso
+                  </p>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    Procedendo, {pendingAppsCount === 1 ? 'verrà' : 'verranno'} automaticamente rifiutat{pendingAppsCount === 1 ? 'a' : 'e'} con notifica ai creator.
+                  </p>
+                </div>
+              )}
+              
+              <div>
+                <p className="mb-2">Stai per eliminare l'offerta: <strong>{selectedOffer?.title}</strong></p>
+                {selectedOffer?.reward_type === 'cash' && (
+                  <p className="text-sm text-muted-foreground">
+                    Fondi da rilasciare: €{((selectedOffer.total_reward_cents - selectedOffer.claimed_reward_cents) / 100).toFixed(2)}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Messaggio per il business (richiesto):
+                </label>
+                <Textarea
+                  placeholder="Es: L'offerta è stata eliminata per violazione delle policy..."
+                  value={adminMessage}
+                  onChange={(e) => setAdminMessage(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting || !adminMessage.trim()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Eliminazione..." : "Conferma Eliminazione"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
