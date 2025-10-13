@@ -123,9 +123,9 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
             <Link
-              to="/how-it-works"
+              to="/"
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                isActive("/how-it-works") ? "text-primary" : "text-muted-foreground"
+                isActive("/") ? "text-primary" : "text-muted-foreground"
               }`}
             >
               {t("howItWorks")}
@@ -290,7 +290,7 @@ const Navbar = () => {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-3 border-t border-border">
             <Link
-              to="/how-it-works"
+              to="/"
               className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
