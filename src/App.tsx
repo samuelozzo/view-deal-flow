@@ -8,7 +8,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import HowItWorks from "./pages/HowItWorks";
-import Index from "./pages/Index";
 import Onboarding from "./pages/Onboarding";
 import Offers from "./pages/Offers";
 import OfferDetail from "./pages/OfferDetail";
@@ -42,8 +41,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/" element={<HowItWorks />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
