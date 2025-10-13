@@ -19,6 +19,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import logo from "@/assets/logo.png";
 
 const HowItWorks = () => {
   const { t } = useLanguage();
@@ -344,6 +345,54 @@ const HowItWorks = () => {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-secondary/50 py-8 md:py-12 border-t border-border">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="text-center sm:text-left">
+              <div className="flex items-center justify-center sm:justify-start space-x-2 mb-3 md:mb-4">
+                <img src={logo} alt="WeasyDeal" className="w-7 h-7 md:w-8 md:h-8" />
+                <span className="text-lg md:text-xl font-bold">WeasyDeal</span>
+              </div>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                {t("heroDescription")}
+              </p>
+            </div>
+            <div className="text-center sm:text-left">
+              <h4 className="font-semibold mb-3 md:mb-4 text-sm md:text-base">{t("forCreators")}</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
+                <li><Link to="/offers" className="hover:text-primary transition-colors">{t("browseOffers")}</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary transition-colors">{t("dashboard")}</Link></li>
+              </ul>
+            </div>
+            <div className="text-center sm:text-left">
+              <h4 className="font-semibold mb-3 md:mb-4 text-sm md:text-base">{t("forBrands")}</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
+                <li><Link to="/onboarding" className="hover:text-primary transition-colors">{t("postAnOffer")}</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary transition-colors">{t("manageCampaigns")}</Link></li>
+              </ul>
+            </div>
+            <div className="text-center sm:text-left">
+              <h4 className="font-semibold mb-3 md:mb-4 text-sm md:text-base">{t("support")}</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
+                <li><Link to="/support" className="hover:text-primary transition-colors">{t("helpCenter")}</Link></li>
+                <li><Link to="/support" className="hover:text-primary transition-colors">{t("contactUs")}</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-xs md:text-sm text-muted-foreground text-center md:text-left">{t("footerText")}</p>
+              <div className="flex flex-wrap justify-center gap-3 md:gap-4 text-xs text-muted-foreground">
+                <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+                <Link to="/cookie-policy" className="hover:text-primary transition-colors">Cookie Policy</Link>
+                <Link to="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
