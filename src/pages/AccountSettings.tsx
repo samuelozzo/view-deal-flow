@@ -9,16 +9,19 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, KeyRound, Trash2 } from "lucide-react";
+import { Loader2, KeyRound, Trash2, Moon, Sun } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTheme } from "next-themes";
+import { Switch } from "@/components/ui/switch";
 
 const AccountSettings = () => {
   const { user, isPasswordRecovery: contextIsPasswordRecovery } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -404,6 +407,39 @@ const AccountSettings = () => {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Aspetto</CardTitle>
+            <CardDescription>
+              Personalizza l'aspetto dell'applicazione
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {theme === "dark" ? (
+                  <Moon className="h-5 w-5 text-primary" />
+                ) : (
+                  <Sun className="h-5 w-5 text-primary" />
+                )}
+                <div>
+                  <Label htmlFor="dark-mode" className="text-base font-medium cursor-pointer">
+                    Modalità Scura
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Attiva il tema scuro per un'esperienza visiva più confortevole
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="dark-mode"
+                checked={theme === "dark"}
+                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+              />
+            </div>
           </CardContent>
         </Card>
 
