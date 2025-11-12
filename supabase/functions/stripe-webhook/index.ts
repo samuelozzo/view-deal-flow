@@ -455,6 +455,143 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const sessionId = session.id;
+        const metadata = session.metadata || {};
+
+        // Only process wallet topup checkouts
+        if (metadata.type !== 'wallet_topup') {
+          console.log(`Skipping checkout session ${sessionId} - not wallet_topup`);
+          break;
+        }
+
+        console.log('🔄 Processing wallet topup checkout:', { sessionId, metadata });
+
+        const walletId = metadata.wallet_id;
+        const userId = metadata.user_id;
+        const amountCents = parseInt(metadata.amount_cents);
+
+        if (!walletId || !userId || !amountCents) {
+          console.error('❌ Missing required metadata:', { sessionId, metadata });
+          return new Response(
+            JSON.stringify({ error: 'Missing required metadata' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Check if already processed (idempotency)
+        const { data: existingTx } = await supabase
+          .from('wallet_transactions')
+          .select('id')
+          .eq('metadata->>stripe_checkout_session', sessionId)
+          .maybeSingle();
+
+        if (existingTx) {
+          console.log('⚠️ Checkout already processed (idempotent):', { sessionId });
+          break;
+        }
+
+        // Create transaction
+        const { error: txError } = await supabase
+          .from('wallet_transactions')
+          .insert({
+            wallet_id: walletId,
+            type: 'topup',
+            direction: 'in',
+            amount_cents: amountCents,
+            status: 'completed',
+            reference_type: 'checkout_session',
+            reference_id: sessionId,
+            metadata: {
+              stripe_checkout_session: sessionId,
+              method: 'stripe_checkout',
+              webhook_processed: true,
+            },
+          });
+
+        if (txError) {
+          console.error('❌ Failed to create transaction:', { sessionId, error: txError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to create transaction', details: txError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log('✓ Transaction created');
+
+        // Update wallet balance
+        const { data: wallet, error: walletFetchError } = await supabase
+          .from('wallets')
+          .select('available_cents')
+          .eq('id', walletId)
+          .single();
+
+        if (walletFetchError || !wallet) {
+          console.error('❌ Failed to fetch wallet:', { sessionId, error: walletFetchError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch wallet', details: walletFetchError?.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const newBalance = wallet.available_cents + amountCents;
+        const { error: walletError } = await supabase
+          .from('wallets')
+          .update({
+            available_cents: newBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', walletId);
+
+        if (walletError) {
+          console.error('❌ Failed to update wallet balance:', { sessionId, error: walletError });
+          return new Response(
+            JSON.stringify({ error: 'Failed to update wallet balance', details: walletError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log('✓ Wallet balance updated:', { oldBalance: wallet.available_cents, newBalance, increase: amountCents });
+
+        // Create notification
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          type: 'topup_completed',
+          title: 'Ricarica Completata',
+          message: `La tua ricarica di €${(amountCents / 100).toFixed(2)} è stata completata con successo.`,
+          link: '/wallet',
+        });
+
+        // Send invoice email (non-blocking)
+        try {
+          const invoiceResponse = await fetch(`${supabaseUrl}/functions/v1/send-invoice-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceRoleKey}`,
+            },
+            body: JSON.stringify({
+              wallet_id: walletId,
+              amount_cents: amountCents,
+              transaction_date: new Date().toISOString(),
+            }),
+          });
+
+          if (!invoiceResponse.ok) {
+            console.error('Failed to send invoice email:', await invoiceResponse.text());
+          } else {
+            console.log('✓ Invoice email sent successfully');
+          }
+        } catch (emailError) {
+          console.error('Error sending invoice email (non-critical):', emailError);
+        }
+
+        console.log('✅ Checkout topup completed:', { sessionId, walletId, amount_cents: amountCents });
+
+        break;
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }

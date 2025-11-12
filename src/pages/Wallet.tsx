@@ -73,6 +73,29 @@ const Wallet = () => {
     }
     fetchWalletData();
 
+    // Check for successful checkout from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      toast({
+        title: "Pagamento Completato!",
+        description: "La tua ricarica è stata elaborata con successo. Il saldo verrà aggiornato a breve.",
+      });
+      // Clear URL params
+      window.history.replaceState({}, '', '/wallet');
+      // Fetch wallet data after a delay to ensure webhook has processed
+      setTimeout(() => {
+        fetchWalletData();
+      }, 2000);
+    } else if (urlParams.get('canceled') === 'true') {
+      toast({
+        title: "Pagamento Annullato",
+        description: "Il pagamento è stato annullato.",
+        variant: "destructive",
+      });
+      // Clear URL params
+      window.history.replaceState({}, '', '/wallet');
+    }
+
     // Set up realtime subscription for wallet updates
     const channel = supabase
       .channel('wallet-updates')
@@ -302,6 +325,31 @@ const Wallet = () => {
     }
   };
 
+  const handleQuickTopup = async (amountCents: number) => {
+    setTopupProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-wallet-checkout", {
+        body: { amount_cents: amountCents },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      console.error("Error creating checkout:", error);
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile iniziare il pagamento",
+        variant: "destructive",
+      });
+    } finally {
+      setTopupProcessing(false);
+    }
+  };
+
   const handleTopup = async () => {
     if (!topupAmount) {
       toast({
@@ -314,50 +362,18 @@ const Wallet = () => {
 
     const amountCents = Math.floor(parseFloat(topupAmount) * 100);
     
-    if (amountCents < 50) {
+    if (amountCents < 500) {
       toast({
         title: "Importo minimo",
-        description: "L'importo minimo per la ricarica è €0.50.",
+        description: "L'importo minimo per la ricarica è €5.00.",
         variant: "destructive",
       });
       return;
     }
 
-    // If card payment, use Stripe
+    // Use new Checkout method for card payments
     if (topupMethod === "card") {
-      setTopupProcessing(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("create-payment-intent", {
-          body: {
-            amount_cents: amountCents,
-            metadata: {
-              type: "wallet_topup",
-            },
-          },
-        });
-
-        if (error) {
-          console.error("Payment intent error:", error);
-          toast({
-            title: "Errore",
-            description: "Impossibile creare il pagamento",
-            variant: "destructive",
-          });
-          setTopupProcessing(false);
-          return;
-        }
-
-        setClientSecret(data.clientSecret);
-        setTopupProcessing(false);
-      } catch (error) {
-        console.error("Topup error:", error);
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore imprevisto",
-          variant: "destructive",
-        });
-        setTopupProcessing(false);
-      }
+      handleQuickTopup(amountCents);
       return;
     }
 
@@ -682,13 +698,51 @@ const Wallet = () => {
               )}
 
               {userRole === "business" && (
-                <Dialog open={topupOpen} onOpenChange={setTopupOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="default">
-                      <ArrowDownCircle className="h-4 w-4 mr-2" />
-                      Ricarica Wallet
-                    </Button>
-                  </DialogTrigger>
+                <>
+                  <div className="w-full">
+                    <p className="text-sm font-medium mb-2">Ricarica Rapida:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleQuickTopup(10000)}
+                        disabled={topupProcessing}
+                      >
+                        {topupProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        €100
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleQuickTopup(50000)}
+                        disabled={topupProcessing}
+                      >
+                        {topupProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        €500
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleQuickTopup(100000)}
+                        disabled={topupProcessing}
+                      >
+                        {topupProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        €1,000
+                      </Button>
+                      <Button
+                        variant="default"
+                        onClick={() => handleQuickTopup(1000000)}
+                        disabled={topupProcessing}
+                      >
+                        {topupProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        €10,000
+                      </Button>
+                    </div>
+                  </div>
+                  <Dialog open={topupOpen} onOpenChange={setTopupOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <ArrowDownCircle className="h-4 w-4 mr-2" />
+                        Importo Personalizzato
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Ricarica Wallet</DialogTitle>
@@ -759,6 +813,7 @@ const Wallet = () => {
                     )}
                   </DialogContent>
                 </Dialog>
+                </>
               )}
             </div>
           </CardContent>
