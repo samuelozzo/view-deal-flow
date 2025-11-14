@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PasswordProvider } from "@/contexts/PasswordContext";
 import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PasswordProtectedRoute } from "@/components/PasswordProtectedRoute";
+import Index from "./pages/Index";
 import HowItWorks from "./pages/HowItWorks";
 import Onboarding from "./pages/Onboarding";
 import Offers from "./pages/Offers";
@@ -36,27 +39,29 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <TooltipProvider>
         <LanguageProvider>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+          <PasswordProvider>
+            <AuthProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
             <Routes>
-              <Route path="/" element={<HowItWorks />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
-              <Route path="/offers/:id" element={<ProtectedRoute><OfferDetail /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/create-offer" element={<ProtectedRoute><CreateOffer /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
-              <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-              <Route path="/manage-offers" element={<ProtectedRoute><ManageOffers /></ProtectedRoute>} />
-              <Route path="/edit-offer/:id" element={<ProtectedRoute><EditOffer /></ProtectedRoute>} />
-              <Route path="/archived-offers" element={<ProtectedRoute><ArchivedOffers /></ProtectedRoute>} />
-              <Route path="/completed-offers" element={<ProtectedRoute><CompletedOffers /></ProtectedRoute>} />
+              <Route path="/" element={<Index />} />
+              <Route path="/how-it-works" element={<PasswordProtectedRoute><HowItWorks /></PasswordProtectedRoute>} />
+              <Route path="/onboarding" element={<PasswordProtectedRoute><Onboarding /></PasswordProtectedRoute>} />
+              <Route path="/auth" element={<PasswordProtectedRoute><Auth /></PasswordProtectedRoute>} />
+              <Route path="/offers" element={<PasswordProtectedRoute><ProtectedRoute><Offers /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/offers/:id" element={<PasswordProtectedRoute><ProtectedRoute><OfferDetail /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/dashboard" element={<PasswordProtectedRoute><ProtectedRoute><Dashboard /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/chat/:id" element={<PasswordProtectedRoute><ProtectedRoute><Chat /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/support" element={<PasswordProtectedRoute><Support /></PasswordProtectedRoute>} />
+              <Route path="/create-offer" element={<PasswordProtectedRoute><ProtectedRoute><CreateOffer /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/admin" element={<PasswordProtectedRoute><ProtectedRoute><AdminDashboard /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/account-settings" element={<PasswordProtectedRoute><ProtectedRoute><AccountSettings /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/wallet" element={<PasswordProtectedRoute><ProtectedRoute><Wallet /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/manage-offers" element={<PasswordProtectedRoute><ProtectedRoute><ManageOffers /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/edit-offer/:id" element={<PasswordProtectedRoute><ProtectedRoute><EditOffer /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/archived-offers" element={<PasswordProtectedRoute><ProtectedRoute><ArchivedOffers /></ProtectedRoute></PasswordProtectedRoute>} />
+              <Route path="/completed-offers" element={<PasswordProtectedRoute><ProtectedRoute><CompletedOffers /></ProtectedRoute></PasswordProtectedRoute>} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -64,10 +69,11 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </LanguageProvider>
-    </TooltipProvider>
+           </BrowserRouter>
+            </AuthProvider>
+          </PasswordProvider>
+        </LanguageProvider>
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
