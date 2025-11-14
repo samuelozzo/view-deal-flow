@@ -53,8 +53,7 @@ const Index = () => {
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Connetti creator e brand attraverso visualizzazioni verificate. 
-              Pagamenti sicuri in escrow, verifica in 14 giorni, marketplace europeo.
+              E se ti dicessi che il tuo prodotto/servizio potrebbe essere condiviso da migliaia di utenti in qualche giorno?
             </p>
 
             <div className="inline-block bg-accent/20 px-6 py-3 rounded-full">
