@@ -3,20 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Shield, Eye, TrendingUp, Lock } from "lucide-react";
+import { Shield, Eye, TrendingUp, Lock, Users, Rocket, CheckCircle2, Mail } from "lucide-react";
 import logo from "@/assets/logo.png";
-import appScreenshot1 from "@/assets/app-screenshot-1.jpg";
-import appScreenshot2 from "@/assets/app-screenshot-2.jpg";
 import { usePassword } from "@/contexts/PasswordContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { checkPassword } = usePassword();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (checkPassword(password)) {
       toast({
@@ -31,6 +32,34 @@ const Index = () => {
         variant: "destructive",
       });
       setPassword("");
+    }
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('waitlist')
+        .insert([{ email }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Iscrizione completata!",
+        description: "Ti terremo aggiornato sugli sviluppi della beta",
+      });
+      setEmail("");
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "C'è stato un problema con l'iscrizione",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -71,29 +100,104 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Screenshots Section */}
+      {/* Benefits Section */}
       <section className="py-16 md:py-24 bg-secondary/30">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Un'anteprima della piattaforma
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+            Perché WeasyDeal?
           </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            La piattaforma che rivoluziona il marketing digitale
+          </p>
           
-          <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            <Card className="overflow-hidden">
-              <img 
-                src={appScreenshot1} 
-                alt="Dashboard WeasyDeal" 
-                className="w-full h-auto"
-              />
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
+            <Card className="p-8 space-y-4 border-2 border-primary/20">
+              <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
+                <Users className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold">Per i Creator</h3>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Monetizza il tuo pubblico in modo trasparente e sicuro</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Ricevi pagamenti garantiti tramite escrow</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Collabora con brand affidabili e verificati</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Nessun rischio di non essere pagato</span>
+                </li>
+              </ul>
             </Card>
-            <Card className="overflow-hidden">
-              <img 
-                src={appScreenshot2} 
-                alt="App Mobile WeasyDeal" 
-                className="w-full h-auto"
-              />
+
+            <Card className="p-8 space-y-4 border-2 border-accent/20">
+              <div className="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center">
+                <Rocket className="w-7 h-7 text-accent" />
+              </div>
+              <h3 className="text-2xl font-bold">Per i Business</h3>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Raggiungi migliaia di potenziali clienti in pochi giorni</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Paga solo per risultati reali e verificati</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Collabora con creator selezionati nel tuo settore</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Sistema di verifica automatica delle visualizzazioni</span>
+                </li>
+              </ul>
             </Card>
           </div>
+
+          {/* Newsletter Section */}
+          <Card className="p-8 md:p-12 max-w-3xl mx-auto bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+            <div className="text-center space-y-4 mb-6">
+              <Mail className="w-12 h-12 text-primary mx-auto" />
+              <h3 className="text-2xl md:text-3xl font-bold">
+                Rimani Aggiornato
+              </h3>
+              <p className="text-muted-foreground">
+                Iscriviti alla lista d'attesa e sii tra i primi ad accedere alla piattaforma
+              </p>
+            </div>
+            
+            <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <Input
+                type="email"
+                placeholder="La tua email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isSubmitting}
+                className="flex-1"
+              />
+              <Button 
+                type="submit" 
+                size="lg" 
+                disabled={isSubmitting}
+                className="sm:w-auto"
+              >
+                {isSubmitting ? "Invio..." : "Iscriviti"}
+              </Button>
+            </form>
+            
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              Non invieremo spam. Promettiamo di aggiornarti solo sulle novità importanti.
+            </p>
+          </Card>
         </div>
       </section>
 
@@ -149,7 +253,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
                 <Input
                   type="password"
                   placeholder="Password di accesso"
