@@ -573,6 +573,24 @@ export type Database = {
           },
         ]
       }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount_cents: number
@@ -696,16 +714,10 @@ export type Database = {
       }
     }
     Functions: {
-      cleanup_expired_instagram_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      delete_user_account: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_instagram_cache: { Args: never; Returns: undefined }
+      delete_user_account: { Args: never; Returns: undefined }
       get_my_payout_requests: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           admin_note: string
           amount_cents: number
@@ -718,7 +730,7 @@ export type Database = {
         }[]
       }
       get_my_payout_requests_masked: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           admin_note: string
           amount_cents: number
@@ -749,10 +761,7 @@ export type Database = {
           user_id_instagram: string
         }[]
       }
-      get_user_stripe_account: {
-        Args: { p_user_id: string }
-        Returns: string
-      }
+      get_user_stripe_account: { Args: { p_user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -779,10 +788,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      user_has_stripe_connect: {
-        Args: { p_user_id: string }
-        Returns: boolean
-      }
+      user_has_stripe_connect: { Args: { p_user_id: string }; Returns: boolean }
       user_owns_wallet: {
         Args: { _user_id: string; _wallet_id: string }
         Returns: boolean
