@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-const CORRECT_PASSWORD = "nonhanessunapasswordquestosito1";
+const CORRECT_PASSWORD = "contenutonondisponibile77!";
 const STORAGE_KEY = "app_access_granted";
 
 interface PasswordContextType {
