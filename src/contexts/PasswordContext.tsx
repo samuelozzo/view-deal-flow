@@ -22,7 +22,7 @@ export const PasswordProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const checkPassword = (password: string): boolean => {
-    if (password === CORRECT_PASSWORD) {
+    if (password.trim() === CORRECT_PASSWORD.trim()) {
       setIsAccessGranted(true);
       sessionStorage.setItem(STORAGE_KEY, "true");
       return true;
